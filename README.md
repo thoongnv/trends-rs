@@ -23,10 +23,16 @@ cargo install strend
 The ``strend`` command can be launched with or without query.
 
 ```shell
+$ strend
+$ strend --query "product:nginx port:443" --facets country:10
 $ strend --help
 Search and visualize Shodan historical data in the terminal.
 
-Usage: strend [OPTIONS]
+Usage: strend [OPTIONS] [COMMAND]
+
+Commands:
+  init  Initialize Shodan API key, grab it from https://account.shodan.io
+  help  Print this message or the help of the given subcommand(s)
 
 Options:
       --query <QUERY>    Search query used to search the historical database, e.g. "product:nginx port:443"

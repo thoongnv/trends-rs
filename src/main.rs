@@ -77,6 +77,7 @@ fn main() -> AppResult<()> {
     while app.running {
         // Render the user interface.
         tui.draw(&mut app, &mut state)?;
+        state.first_render = false;
 
         // Handle events.
         match tui.events.next()? {

@@ -91,13 +91,10 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
     }
 
     // Run search if first launch with --query --facets, skip if has error
-    if !state.first_render
-        && app.queries.is_empty()
-        && (!app.no_results && app.api_error.is_empty())
+    if state.first_render && app.queries.is_empty() && (!app.no_results && app.api_error.is_empty())
     {
         // Use _ to ignore Err() if current function don't have return type
         let _ = app.search(state.sender.clone());
-        state.first_render = false;
     }
 
     let layouts = Layout::default()
