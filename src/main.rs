@@ -1,13 +1,14 @@
-use clap::Parser;
+use clap::{Parser, Subcommand};
 use crossterm::event::Event as CrosstermEvent;
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
 use std::io;
 use std::sync::mpsc;
-use strend::app::{App, AppResult, AppState, EXIT_ERROR_CODE};
+use strend::app::{App, AppResult, AppState, EXIT_ERROR_CODE, EXIT_SUCCESS_CODE};
 use strend::event::{Event, EventHandler};
 use strend::handler::handle_events;
 use strend::tui::Tui;
+use strend::util::init_api_key;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -15,8 +16,7 @@ use strend::tui::Tui;
     about = "Search and visualize Shodan historical data in the terminal.",
     version
 )]
-
-struct Args {
+struct Cli {
     /// Search query used to search the historical database, e.g. "product:nginx port:443"
     #[arg(long)]
     query: Option<String>,
@@ -24,12 +24,30 @@ struct Args {
     /// A comma-separated list of properties to get summary information on, e.g. country:10
     #[arg(long)]
     facets: Option<String>,
+
+    #[clap(subcommand)]
+    command: Option<Commands>,
+}
+
+#[derive(Debug, Subcommand)]
+enum Commands {
+    /// Initialize Shodan API key, grab it from https://account.shodan.io
+    Init { key: String },
 }
 
 fn main() -> AppResult<()> {
-    let args = Args::parse();
-    let query = args.query.unwrap_or(String::new());
-    let facets = args.facets.unwrap_or(String::new());
+    let cli = Cli::parse();
+
+    match &cli.command {
+        Some(Commands::Init { key }) => {
+            init_api_key(key.to_string())?;
+            std::process::exit(EXIT_SUCCESS_CODE);
+        }
+        None => {}
+    }
+
+    let query = cli.query.unwrap_or(String::new());
+    let facets = cli.facets.unwrap_or(String::new());
     // Shared data to run API requests in separate thread so it's not block application
     let (sender, receiver) = mpsc::channel();
 

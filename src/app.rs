@@ -24,6 +24,7 @@ const MONTH_ABBR: [&str; 12] = [
     "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 pub const EXIT_ERROR_CODE: i32 = 1;
+pub const EXIT_SUCCESS_CODE: i32 = 0;
 
 #[derive(Debug, Clone)]
 pub struct Points {
@@ -82,7 +83,7 @@ impl App {
             Err(_) => {
                 println!(
                     "Error: {}",
-                    "Missing API key, please run \"shodan init\" before using this tool"
+                    "Missing API key, please run \"strend init <API key>\""
                 );
                 std::process::exit(EXIT_ERROR_CODE);
             }
