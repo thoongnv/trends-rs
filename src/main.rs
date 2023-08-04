@@ -11,8 +11,9 @@ use strend::tui::Tui;
 
 #[derive(Parser, Debug)]
 #[command(
-    name = "Shodan",
-    about = "Search and visualize Shodan historical data in the terminal."
+    name = "strend",
+    about = "Search and visualize Shodan historical data in the terminal.",
+    version
 )]
 
 struct Args {
