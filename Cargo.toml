@@ -1,0 +1,21 @@
+[package]
+name = "trends-rs"
+description = "Search and visualize Shodan historical data in the terminal."
+version = "0.1.0"
+authors = ["Shodan"]
+readme = "README.md"
+license = "MIT"
+edition = "2021"
+homepage = "https://gitlab.com/shodan-public/trends-rs"
+repository = "https://gitlab.com/shodan-public/trends-rs"
+
+[dependencies]
+clap = { version = "4.3.19", features = ["derive"] }
+crossterm = "0.26.1"
+dirs = "5.0.1"
+human-repr = "1.1.0"
+ratatui = { version = "0.22.0" }
+serde = {version = "1.0.171", features = ["derive"]}
+serde_json = "1.0.103"
+ureq = {version = "2.7.1", features = ["tls", "json"]}
+url = "2.4.0"
