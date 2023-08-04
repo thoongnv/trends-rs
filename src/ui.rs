@@ -91,12 +91,13 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
     }
 
     // Run search if first launch with --query --facets, skip if has error
-    if !app.search_input.get_input().is_empty()
+    if !state.first_render
         && app.queries.is_empty()
         && (!app.no_results && app.api_error.is_empty())
     {
         // Use _ to ignore Err() if current function don't have return type
         let _ = app.search(state.sender.clone());
+        state.first_render = false;
     }
 
     let layouts = Layout::default()
@@ -117,7 +118,7 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
     // Some reuse widgets
     let error_widget = Paragraph::new(format!(
         "{}\n\
-        API docs: https://developer.shodan.io/api
+        API documents: https://developer.shodan.io/api/trends
     ",
         app.api_error.to_owned()
     ))
@@ -240,10 +241,10 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
             ))
             .alignment(Alignment::Center);
         frame.render_widget(loading, layouts[1]);
-    } else if app.queries.is_empty() && app.search_input.get_input().is_empty() {
+    } else if app.queries.is_empty() {
         // Launched without search query
         let welcome = Paragraph::new(
-            "Make search by enter query in search box.\n\
+            "Make search by `Enter` query in search box.\n\
                     Press `Esc`/ double `Esc` or `Ctrl-C` to stop running\n\
                     Switch between panels by `Tab`",
         )

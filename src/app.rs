@@ -69,6 +69,7 @@ pub struct App {
 pub struct AppState {
     pub unfocused: bool,
     pub submitted: bool,
+    pub first_render: bool,
     pub sender: mpsc::Sender<Result<ureq::Response, ureq::Error>>,
 }
 

@@ -62,6 +62,7 @@ fn main() -> AppResult<()> {
     let mut state: AppState = AppState {
         unfocused: true,
         submitted: false,
+        first_render: true,
         sender,
     };
 
