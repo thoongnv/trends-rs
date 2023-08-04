@@ -31,7 +31,7 @@ impl UserInput {
     }
 
     pub fn set_input(&mut self, input: &str) {
-        self.input = input.to_string();
+        self.input = input.to_owned();
         self.cursor_position = self.input.len();
     }
 

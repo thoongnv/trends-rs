@@ -12,3 +12,12 @@ pub mod tui;
 
 /// Event handler.
 pub mod handler;
+
+/// Utilities.
+pub mod util;
+
+/// Defined components.
+pub mod components;
+
+/// Defined widgets.
+pub mod widgets;

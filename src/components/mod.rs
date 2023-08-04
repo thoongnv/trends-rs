@@ -3,7 +3,7 @@ use crossterm::event::Event;
 use crate::app::AppState;
 
 pub mod line_chart;
-pub mod list;
+pub mod stateful_list;
 pub mod user_input;
 
 pub trait Component {

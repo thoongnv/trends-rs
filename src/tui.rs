@@ -1,11 +1,10 @@
-use crate::app::{App, AppResult};
+use crate::app::{App, AppResult, AppState};
 use crate::event::EventHandler;
 use crate::ui;
-use crossterm::event::{DisableMouseCapture, EnableMouseCapture};
 use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
+use ratatui::backend::Backend;
+use ratatui::Terminal;
 use std::io;
-use tui::backend::Backend;
-use tui::Terminal;
 
 /// Representation of a terminal user interface.
 ///
@@ -30,7 +29,7 @@ impl<B: Backend> Tui<B> {
     /// It enables the raw mode and sets terminal properties.
     pub fn init(&mut self) -> AppResult<()> {
         terminal::enable_raw_mode()?;
-        crossterm::execute!(io::stderr(), EnterAlternateScreen, EnableMouseCapture)?;
+        crossterm::execute!(io::stdout(), EnterAlternateScreen)?;
         self.terminal.hide_cursor()?;
         self.terminal.clear()?;
         Ok(())
@@ -40,8 +39,8 @@ impl<B: Backend> Tui<B> {
     ///
     /// [`Draw`]: tui::Terminal::draw
     /// [`rendering`]: crate::ui:render
-    pub fn draw(&mut self, app: &mut App) -> AppResult<()> {
-        self.terminal.draw(|frame| ui::render(app, frame))?;
+    pub fn draw(&mut self, app: &mut App, state: &mut AppState) -> AppResult<()> {
+        self.terminal.draw(|frame| ui::render(app, state, frame))?;
         Ok(())
     }
 
@@ -50,7 +49,7 @@ impl<B: Backend> Tui<B> {
     /// It disables the raw mode and reverts back the terminal properties.
     pub fn exit(&mut self) -> AppResult<()> {
         terminal::disable_raw_mode()?;
-        crossterm::execute!(io::stderr(), LeaveAlternateScreen, DisableMouseCapture)?;
+        crossterm::execute!(io::stdout(), LeaveAlternateScreen)?;
         self.terminal.show_cursor()?;
         Ok(())
     }

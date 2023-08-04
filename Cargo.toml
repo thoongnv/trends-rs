@@ -1,13 +1,14 @@
 [package]
-name = "trends-rs"
-description = "Search and visualize Shodan historical data in the terminal."
+name = "strend"
 version = "0.1.0"
-authors = ["Shodan"]
+authors = ["Thong Nguyen <vanthong.nguyen@shodan.io>"]
+description = "Search and visualize Shodan historical data in the terminal."
 readme = "README.md"
 license = "MIT"
 edition = "2021"
-homepage = "https://gitlab.com/shodan-public/trends-rs"
-repository = "https://gitlab.com/shodan-public/trends-rs"
+rust-version = "1.71"
+repository = "https://github.com/thoongnv/trends-rs"
+keywords = ["tui", "cli", "terminal", "dashboard"]
 
 [dependencies]
 clap = { version = "4.3.19", features = ["derive"] }
@@ -19,3 +20,8 @@ serde = {version = "1.0.171", features = ["derive"]}
 serde_json = "1.0.103"
 ureq = {version = "2.7.1", features = ["tls", "json"]}
 url = "2.4.0"
+
+[profile.release]
+lto = true
+opt-level = 'z'  # Optimize for size.
+codegen-units = 1
