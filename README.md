@@ -6,7 +6,7 @@
 
 ## Search and visualize Shodan historical data in the terminal.
 
-``strend`` fetches data via the [Shodan Trends API](https://trends.shodan.io/api/v1/search?query=&facets=&key=), please check [docs](https://developer.shodan.io/api/trends) for more information.
+``strend`` fetches data via the [Shodan Trends](https://trends.shodan.io) API, please check [docs](https://developer.shodan.io/api/trends) for more information.
 
 ![Sample Output](output-sample.png)
 
@@ -32,4 +32,5 @@ Options:
       --query <QUERY>    Search query used to search the historical database, e.g. "product:nginx port:443"
       --facets <FACETS>  A comma-separated list of properties to get summary information on, e.g. country:10
   -h, --help             Print help
+  -V, --version          Print version
 ```
