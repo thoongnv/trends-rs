@@ -132,9 +132,9 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
         .alignment(Alignment::Center);
 
     let colors_len = LINE_COLORS.len();
-    let focus_style = Style::default().fg(Color::Yellow);
+    let focused_style = Style::default().fg(Color::Yellow);
     let search_box_style = match app.search_input.focused() || app.facets_input.focused() {
-        true => focus_style,
+        true => focused_style,
         false => Style::default(),
     };
 
@@ -232,7 +232,7 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
         let loading = Paragraph::new(format!("Searching ...\n"))
             .block(Block::default().borders(Borders::ALL).border_style(
                 match app.line_chart.focused() {
-                    true => focus_style,
+                    true => focused_style,
                     _ => Style::default(),
                 },
             ))
@@ -288,7 +288,7 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
                         .borders(Borders::ALL)
                         .title("Saved queries")
                         .border_style(match app.saved_queries.focused() {
-                            true => focus_style,
+                            true => focused_style,
                             _ => Style::default(),
                         }),
                 )
@@ -311,7 +311,7 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
                 .title("Facet values")
                 .borders(Borders::ALL)
                 .border_style(match app.facet_values.focused() {
-                    true => focus_style,
+                    true => focused_style,
                     _ => Style::default(),
                 });
             frame.render_widget(facet_values, sidebar_layouts[1]);
@@ -418,16 +418,23 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
                         )
                         .x_axis(
                             Axis::default()
-                                .style(Style::default().fg(Color::Gray))
+                                .style(match app.line_chart.focused() {
+                                    true => focused_style,
+                                    false => Style::default().fg(Color::Gray),
+                                })
                                 .bounds([x_bounds[0], x_bounds[x_bounds.len() - 1]])
                                 .labels(x_labels.iter().cloned().map(Span::from).collect()),
                         )
                         .y_axis(
                             Axis::default()
                                 .title("num of banners")
-                                .style(Style::default().fg(Color::Gray))
+                                .style(match app.line_chart.focused() {
+                                    true => focused_style,
+                                    false => Style::default().fg(Color::Gray),
+                                })
                                 .bounds([y_bounds[0], y_bounds[y_bounds.len() - 1]])
-                                .labels(y_labels.iter().cloned().map(Span::from).collect()),
+                                .labels(y_labels.iter().cloned().map(Span::from).collect())
+                                .labels_alignment(Alignment::Center),
                         );
 
                     frame.render_widget(query_chart, main_layouts[1]);
@@ -475,7 +482,7 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
                                         .borders(Borders::ALL)
                                         .title("Facet values")
                                         .border_style(match app.facet_values.focused() {
-                                            true => focus_style,
+                                            true => focused_style,
                                             _ => Style::default(),
                                         }),
                                 )
@@ -522,7 +529,10 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
                                     )
                                     .x_axis(
                                         Axis::default()
-                                            .style(Style::default().fg(Color::Gray))
+                                            .style(match app.line_chart.focused() {
+                                                true => focused_style,
+                                                false => Style::default().fg(Color::Gray),
+                                            })
                                             .bounds([
                                                 chart.x_bounds[0],
                                                 chart.x_bounds[chart.x_bounds.len() - 1],
@@ -538,7 +548,10 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
                                     )
                                     .y_axis(
                                         Axis::default()
-                                            .style(Style::default().fg(Color::Gray))
+                                            .style(match app.line_chart.focused() {
+                                                true => focused_style,
+                                                false => Style::default().fg(Color::Gray),
+                                            })
                                             .bounds([
                                                 chart.y_bounds[0],
                                                 chart.y_bounds[chart.y_bounds.len() - 1],
@@ -550,7 +563,8 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
                                                     .cloned()
                                                     .map(Span::from)
                                                     .collect(),
-                                            ),
+                                            )
+                                            .labels_alignment(Alignment::Center),
                                     );
 
                                 frame.render_widget(facet_chart, main_layouts[1]);
