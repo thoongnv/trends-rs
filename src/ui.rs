@@ -73,7 +73,7 @@ const LINE_COLORS: [Color; 50] = [
     Color::Rgb(169, 120, 186),
 ];
 const MAX_SAVED_QUERIES: usize = 5;
-const SELECT_FACET_LINES: usize = 5;
+const SELECTED_FACET_LINES: usize = 5;
 
 /// Renders the user interface widgets.
 // - https://docs.rs/ratatui/latest/ratatui/widgets/index.html
@@ -277,7 +277,7 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
                 query_colors.insert(query.to_owned(), label_color);
 
                 let lines = vec![Line::from(vec![query.to_owned().into()])];
-                query_items.push(MultiListItem::new(lines).style(Style::default()));
+                query_items.push(MultiListItem::new(lines).style(Style::default().fg(label_color)));
                 query_lines.push(query.to_owned());
             }
             app.saved_queries.set_items(query_lines.clone());
@@ -385,7 +385,7 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
                         Some(chart) => {
                             datasets.push(
                                 Dataset::default()
-                                    .name(query.to_owned())
+                                    // .name(query.to_owned())
                                     .marker(symbols::Marker::Braille)
                                     .graph_type(GraphType::Line)
                                     .style(Style::default().fg(query_colors[query]))
@@ -472,7 +472,7 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
                             // Default highlight first few lines only on first initialize
                             if app.facet_values.items.is_empty() && !facet_lines.is_empty() {
                                 app.facet_values.state.with_selected_indexes(Vec::from_iter(
-                                    0..(cmp::min(SELECT_FACET_LINES, facet_lines.len() - 1)),
+                                    0..(cmp::min(SELECTED_FACET_LINES, facet_lines.len() - 1)),
                                 ));
                             }
                             app.facet_values.set_items(facet_lines.clone());
