@@ -427,7 +427,8 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
                         )
                         .y_axis(
                             Axis::default()
-                                .title("num of banners")
+                                // https://github.com/ratatui-org/ratatui/issues/379
+                                // .title(Span::styled("num of banners", Style::default()))
                                 .style(match app.line_chart.focused() {
                                     true => focused_style,
                                     false => Style::default().fg(Color::Gray),
