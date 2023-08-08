@@ -3,7 +3,6 @@ use serde_json::{json, Value};
 use std::fs::OpenOptions;
 use std::fs::{self, File};
 use std::io::prelude::*;
-use std::os::unix::prelude::OpenOptionsExt;
 use std::path::Path;
 
 fn get_config_dir() -> String {
@@ -44,11 +43,22 @@ pub fn init_api_key(mut key: String) -> Result<(), std::io::Error> {
 
             // Save key to file
             let fpath = format!("{}/api_key", config_dir);
-            let mut file = OpenOptions::new()
-                .create(true)
-                .write(true)
-                .mode(0o600)
-                .open(fpath)?;
+            let mut file;
+
+            #[cfg(unix)]
+            {
+                use std::os::unix::prelude::OpenOptionsExt;
+                file = OpenOptions::new()
+                    .create(true)
+                    .write(true)
+                    .mode(0o600)
+                    .open(fpath)?;
+            }
+
+            #[cfg(not(unix))]
+            {
+                file = OpenOptions::new().create(true).write(true).open(fpath)?;
+            }
 
             file.write_all(key.as_bytes())?;
             println!("Successfully initialized");
