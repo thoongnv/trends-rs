@@ -6,13 +6,13 @@
 
 ## Search and visualize Shodan historical data in the terminal.
 
-``strend`` fetches data via the [Shodan Trends](https://trends.shodan.io) API, please check [docs](https://developer.shodan.io/api/trends) for more information.
+``strend`` fetches data via the [Shodan Trends](https://trends.shodan.io) API, please check [docs](https://developer.shodan.io/api) for more information.
 
 ![Sample Output](output-sample.png)
 
 ## Installation
 
-Grab the [latest release](https://github.com/thoongnv/trends-rs/releases) for your operating system or install it from [crates.io](https://crates.io).
+Grab the [latest release](https://github.com/thoongnv/trends-rs/releases) for your operating system or install it from [crates.io](https://crates.io/crates/strend).
 
 ```shell
 cargo install strend

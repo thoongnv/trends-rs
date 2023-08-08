@@ -229,7 +229,7 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
 
     // API request in the background
     if app.blocking {
-        let loading = Paragraph::new(format!("Searching ...\n"))
+        let loading = Paragraph::new(format!("Searching...\n"))
             .block(Block::default().borders(Borders::ALL).border_style(
                 match app.line_chart.focused() {
                     true => focused_style,
@@ -241,7 +241,7 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
     } else if app.queries.is_empty() {
         // Launched without search query
         let welcome = Paragraph::new(
-            "Make search by `Enter` query in search box.\n\
+            "Make search by `Enter` a query in search box.\n\
                     Press `Esc`/ double `Esc` or `Ctrl-C` to stop running\n\
                     Switch between panels by `Tab`",
         )
@@ -371,11 +371,9 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
                 // Just get one X Axis as it's same for all charts
                 let mut x_bounds = vec![];
                 let mut x_labels = vec![];
-
-                for (_, chart) in app.charts.iter() {
-                    x_bounds = chart.x_bounds.clone();
-                    x_labels = chart.x_labels.clone();
-                    break;
+                if let Some(entry) = app.charts.last_entry() {
+                    x_bounds = entry.get().x_bounds.clone();
+                    x_labels = entry.get().x_labels.clone();
                 }
 
                 // Have to rebuild Y Axis data from selected charts

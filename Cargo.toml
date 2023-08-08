@@ -1,12 +1,12 @@
 [package]
 name = "strend"
-version = "0.1.3"
+version = "0.1.4"
 authors = ["Thong Nguyen <vanthong.nguyen@shodan.io>"]
 description = "Official TUI to search and visualize Shodan historical data."
 readme = "README.md"
 license = "MIT"
 edition = "2021"
-rust-version = "1.65"
+rust-version = "1.71.0"
 repository = "https://github.com/thoongnv/trends-rs"
 keywords = ["tui", "cli", "terminal", "dashboard", "shodan"]
 
