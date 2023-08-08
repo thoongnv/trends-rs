@@ -371,9 +371,11 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
                 // Just get one X Axis as it's same for all charts
                 let mut x_bounds = vec![];
                 let mut x_labels = vec![];
-                if let Some(entry) = app.charts.last_entry() {
-                    x_bounds = entry.get().x_bounds.clone();
-                    x_labels = entry.get().x_labels.clone();
+
+                for (_, chart) in app.charts.iter() {
+                    x_bounds = chart.x_bounds.clone();
+                    x_labels = chart.x_labels.clone();
+                    break;
                 }
 
                 // Have to rebuild Y Axis data from selected charts

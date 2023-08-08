@@ -6,7 +6,7 @@ description = "Official TUI to search and visualize Shodan historical data."
 readme = "README.md"
 license = "MIT"
 edition = "2021"
-rust-version = "1.71"
+rust-version = "1.65"
 repository = "https://github.com/thoongnv/trends-rs"
 keywords = ["tui", "cli", "terminal", "dashboard", "shodan"]
 
