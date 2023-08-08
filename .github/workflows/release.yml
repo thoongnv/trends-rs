@@ -68,7 +68,7 @@ jobs:
         echo "target dir is: ${{ env.TARGET_DIR }}"
 
     - name: Build release binary
-      run: cargo build --verbose --release ${{ env.TARGET_FLAGS }}
+      run: ${{ env.CARGO }} build --verbose --release ${{ env.TARGET_FLAGS }}
 
     - name: Strip release binary (linux and macos)
       if: matrix.build == 'linux' || matrix.build == 'macos'
@@ -83,8 +83,23 @@ jobs:
           aarch64-linux-gnu-strip \
           /target/aarch64-unknown-linux-gnu/release/strend
 
+    - name: Build archive
+      shell: bash
+      run: |
+        staging="strend-${{ github.ref_name }}-${{ matrix.target }}"
+        mkdir -p "$staging"
+
+        if [ "${{ matrix.os }}" = "windows" ]; then
+          cp "target/release/strend.exe" "$staging/"
+          7z a "$staging.zip" "$staging"
+          echo "ASSET=$staging.zip" >> $GITHUB_ENV
+        else
+          cp "target/${{ matrix.target }}/release/strend" "$staging/"
+          tar czf "$staging.tar.gz" "$staging"
+          echo "ASSET=$staging.tar.gz" >> $GITHUB_ENV
+        fi
+
     - name: Publish
       uses: softprops/action-gh-release@v1
       with:
-        files: |
-          ./release/*
+        files: ${{ env.ASSET }}
