@@ -31,7 +31,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build: [linux, linux-arm, macos, windows, windows-arm]
+        build: [linux, linux-arm, macos, windows]
         include:
         - build: linux
           os: ubuntu-latest
@@ -49,10 +49,6 @@ jobs:
           os: windows-latest
           rust: stable
           target: x86_64-pc-windows-msvc
-        - build: windows-arm
-          os: windows-latest
-          rust: stable
-          target: aarch64-pc-windows-msvc
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
@@ -65,18 +61,13 @@ jobs:
         override: true
         target: ${{ matrix.target }}
 
-    - name: Install Windows ARM toolchain
-      if: matrix.build == 'windows-arm'
+    - name: Use Cross
+      shell: bash
       run: |
-        rustup target add aarch64-pc-windows-msvc
-
-    # - name: Use Cross
-    #   shell: bash
-    #   run: |
-    #     cargo install cross
-    #     echo "CARGO=cross" >> $GITHUB_ENV
-    #     echo "TARGET_FLAGS=--target ${{ matrix.target }}" >> $GITHUB_ENV
-    #     echo "TARGET_DIR=./target/${{ matrix.target }}" >> $GITHUB_ENV
+        cargo install cross
+        echo "CARGO=cross" >> $GITHUB_ENV
+        echo "TARGET_FLAGS=--target ${{ matrix.target }}" >> $GITHUB_ENV
+        echo "TARGET_DIR=./target/${{ matrix.target }}" >> $GITHUB_ENV
 
     - name: Show command used for Cargo
       run: |
