@@ -91,8 +91,7 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
     }
 
     // Run search if first launch with --query --facets, skip if has error
-    if state.first_render && app.queries.is_empty() && (!app.no_results && app.api_error.is_empty())
-    {
+    if state.first_render && !app.search_input.get_input().is_empty() {
         // Use _ to ignore Err() if current function don't have return type
         let _ = app.search(state.sender.clone());
     }
@@ -239,359 +238,353 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
             .alignment(Alignment::Center);
         frame.render_widget(loading, layouts[1]);
     } else if app.queries.is_empty() {
-        // Launched without search query
-        let welcome = Paragraph::new(
-            "Make search by `Enter` a query in search box.\n\
-                    Press `Esc`/ double `Esc` or `Ctrl-C` to stop running\n\
-                    Switch between panels by `Tab`",
-        )
-        .block(Block::default().title("Info").borders(Borders::ALL))
-        .alignment(Alignment::Center);
-        frame.render_widget(welcome, layouts[1]);
-    } else {
         // First query errored out or has no results
-        if app.queries.is_empty() {
-            if !app.api_error.is_empty() {
-                frame.render_widget(error_widget, layouts[1]);
-            } else if app.no_results {
-                frame.render_widget(no_results_widget, layouts[1]);
+        if !app.api_error.is_empty() {
+            frame.render_widget(error_widget, layouts[1]);
+        } else if app.no_results {
+            frame.render_widget(no_results_widget, layouts[1]);
+        } else {
+            // Launched without search query
+            let welcome = Paragraph::new(
+                "Make search by `Enter` a query in search box.\n\
+                        Press `Esc`/ double `Esc` or `Ctrl-C` to stop running\n\
+                        Switch between panels by `Tab`",
+            )
+            .block(Block::default().title("Info").borders(Borders::ALL))
+            .alignment(Alignment::Center);
+            frame.render_widget(welcome, layouts[1]);
+        }
+    } else {
+        // We have saved queries then we should show it, errors on the right side if any
+        let main_layouts = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Percentage(20), Constraint::Percentage(80)].as_ref())
+            .split(layouts[1]);
+        let sidebar_layouts = Layout::default()
+            .constraints([Constraint::Percentage(30), Constraint::Percentage(70)].as_ref())
+            .split(main_layouts[0]);
+
+        // Build saved queries block
+        let mut query_lines: Vec<String> = vec![];
+        let mut query_items: Vec<MultiListItem> = vec![];
+        // Color mapping used to draw chart later
+        let mut query_colors: HashMap<String, Color> = HashMap::new();
+
+        for (index, query) in app.queries.iter().rev().enumerate() {
+            let label_color = LINE_COLORS[index];
+            query_colors.insert(query.to_owned(), label_color);
+
+            let lines = vec![Line::from(vec![query.to_owned().into()])];
+            query_items.push(MultiListItem::new(lines).style(Style::default().fg(label_color)));
+            query_lines.push(query.to_owned());
+        }
+        app.saved_queries.set_items(query_lines.clone());
+
+        let saved_queries = MultiList::new(query_items)
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title("Saved queries")
+                    .border_style(match app.saved_queries.focused() {
+                        true => focused_style,
+                        _ => Style::default(),
+                    }),
+            )
+            .highlight_style(
+                Style::default()
+                    .fg(Color::Black)
+                    .bg(Color::LightYellow)
+                    .add_modifier(Modifier::BOLD),
+            )
+            .highlight_symbol(" [x] ")
+            .unselect_symbol(" [ ] ");
+        frame.render_stateful_widget(
+            saved_queries,
+            sidebar_layouts[0],
+            &mut app.saved_queries.state,
+        );
+
+        // Reserve empty facet values block, update later if user requested facets in their query
+        let facet_values = Block::default()
+            .title("Facet values")
+            .borders(Borders::ALL)
+            .border_style(match app.facet_values.focused() {
+                true => focused_style,
+                _ => Style::default(),
+            });
+        frame.render_widget(facet_values, sidebar_layouts[1]);
+
+        // Get last submitted query
+        let mut selected_query = &app.last_query.to_owned();
+
+        // On submit new query
+        if state.submitted {
+            for (index, query) in query_lines.iter().enumerate() {
+                if selected_query == query {
+                    app.saved_queries.state.with_selected_indexes(vec![index]);
+                    app.saved_queries.state.select(Some(index));
+                    break;
+                }
             }
         } else {
-            // We have saved queries then we should show it
-            let main_layouts = Layout::default()
-                .direction(Direction::Horizontal)
-                .constraints([Constraint::Percentage(20), Constraint::Percentage(80)].as_ref())
-                .split(layouts[1]);
-            let sidebar_layouts = Layout::default()
-                .constraints([Constraint::Percentage(30), Constraint::Percentage(70)].as_ref())
-                .split(main_layouts[0]);
-
-            // Build saved queries block
-            let mut query_lines: Vec<String> = vec![];
-            let mut query_items: Vec<MultiListItem> = vec![];
-            // Color mapping used to draw chart later
-            let mut query_colors: HashMap<String, Color> = HashMap::new();
-
-            for (index, query) in app.queries.iter().rev().enumerate() {
-                let label_color = LINE_COLORS[index];
-                query_colors.insert(query.to_owned(), label_color);
-
-                let lines = vec![Line::from(vec![query.to_owned().into()])];
-                query_items.push(MultiListItem::new(lines).style(Style::default().fg(label_color)));
-                query_lines.push(query.to_owned());
-            }
-            app.saved_queries.set_items(query_lines.clone());
-
-            let saved_queries = MultiList::new(query_items)
-                .block(
-                    Block::default()
-                        .borders(Borders::ALL)
-                        .title("Saved queries")
-                        .border_style(match app.saved_queries.focused() {
-                            true => focused_style,
-                            _ => Style::default(),
-                        }),
-                )
-                .highlight_style(
-                    Style::default()
-                        .fg(Color::Black)
-                        .bg(Color::LightYellow)
-                        .add_modifier(Modifier::BOLD),
-                )
-                .highlight_symbol(" [x] ")
-                .unselect_symbol(" [ ] ");
-            frame.render_stateful_widget(
-                saved_queries,
-                sidebar_layouts[0],
-                &mut app.saved_queries.state,
-            );
-
-            // Reserve empty facet values block, update later if user requested facets in their query
-            let facet_values = Block::default()
-                .title("Facet values")
-                .borders(Borders::ALL)
-                .border_style(match app.facet_values.focused() {
-                    true => focused_style,
-                    _ => Style::default(),
-                });
-            frame.render_widget(facet_values, sidebar_layouts[1]);
-
-            // Get last selected query, default to last submitted query if there is no error
-            let mut selected_query = "";
-            if !app.queries.is_empty() && (app.api_error.is_empty() && !app.no_results) {
-                selected_query = app.queries.last().unwrap().as_str();
+            // Auto highlight first query if there is no error
+            if app.charts.len() == 1 && app.api_error.is_empty() && !app.no_results {
+                app.saved_queries.state.with_selected_indexes(vec![0]);
+                app.saved_queries.state.select(Some(0));
             }
 
-            // On submit new query
-            if state.submitted {
-                for (index, query) in query_lines.iter().enumerate() {
-                    if selected_query == query {
-                        app.saved_queries.state.with_selected_indexes(vec![index]);
-                        app.saved_queries.state.select(Some(index));
-                        break;
+            // Only handle selected event in StatefulList, the above `app.saved_queries.state.select` won't go there
+            match app.saved_queries.state.selected() {
+                Some(index) => {
+                    for (i, query) in query_lines.iter().enumerate() {
+                        if i == index {
+                            selected_query = query;
+                            break;
+                        }
                     }
-                }
-            } else {
-                // Auto highlight first query
-                if app.charts.len() == 1 {
-                    app.saved_queries.state.with_selected_indexes(vec![0]);
-                    app.saved_queries.state.select(Some(0));
-                }
 
-                // Only handle selected event in StatefulList, the above `app.saved_queries.state.select` won't go there
-                match app.saved_queries.state.selected() {
-                    Some(index) => {
-                        for (i, query) in query_lines.iter().enumerate() {
-                            if i == index {
-                                selected_query = query;
-                                break;
+                    // Load correct query/ facets in search box if select differently with previous
+                    if selected_query != &app.prev_query {
+                        let decoded_query = form_urlencoded::parse(selected_query.as_bytes());
+                        for pair in decoded_query.into_iter() {
+                            if pair.0 == "query" {
+                                app.search_input.set_input(&pair.1);
+                            } else if pair.0 == "facets" {
+                                app.facets_input.set_input(&pair.1);
                             }
                         }
+                    }
+                }
+                None => {}
+            }
+        }
 
-                        // Load correct query/ facets in search box if select differently with previous
-                        if selected_query != &app.prev_query {
-                            let decoded_query = form_urlencoded::parse(selected_query.as_bytes());
-                            for pair in decoded_query.into_iter() {
-                                if pair.0 == "query" {
-                                    app.search_input.set_input(&pair.1);
-                                } else if pair.0 == "facets" {
-                                    app.facets_input.set_input(&pair.1);
-                                }
-                            }
+        // Default draw total chart if unfocused facet values block
+        if !app.facet_values.focused() {
+            let mut datasets = vec![];
+
+            // Just get one X Axis as it's same for all charts
+            let mut x_bounds = vec![];
+            let mut x_labels = vec![];
+            if let Some(entry) = app.charts.last_entry() {
+                x_bounds = entry.get().x_bounds.clone();
+                x_labels = entry.get().x_labels.clone();
+            }
+
+            // Have to rebuild Y Axis data from selected charts
+            let mut max_y_axis = 0.0;
+
+            for index in app.saved_queries.state.selected_indexes() {
+                let query = &app.queries[*index];
+                match app.charts.get(query) {
+                    Some(chart) => {
+                        datasets.push(
+                            Dataset::default()
+                                // .name(query.to_owned())
+                                .marker(symbols::Marker::Braille)
+                                .graph_type(GraphType::Line)
+                                .style(Style::default().fg(query_colors[query]))
+                                .data(&chart.datasets[0].data),
+                        );
+
+                        let chart_y_axis = chart.y_bounds[chart.y_bounds.len() - 1];
+                        if chart_y_axis > max_y_axis {
+                            max_y_axis = chart_y_axis;
                         }
                     }
                     None => {}
                 }
             }
 
-            // Default draw total chart if unfocused facet values block
-            if !app.facet_values.focused() {
-                let mut datasets = vec![];
+            let y_bounds = vec![0.0, max_y_axis];
+            // Convert float to human-readable format
+            let y_labels = vec![
+                String::from("0"),
+                ((max_y_axis / 2.0) as i64).human_count_bare().to_string(),
+                (max_y_axis as i64).human_count_bare().to_string(),
+            ];
 
-                // Just get one X Axis as it's same for all charts
-                let mut x_bounds = vec![];
-                let mut x_labels = vec![];
-                if let Some(entry) = app.charts.last_entry() {
-                    x_bounds = entry.get().x_bounds.clone();
-                    x_labels = entry.get().x_labels.clone();
-                }
+            if !datasets.is_empty() {
+                let query_chart = Chart::new(datasets)
+                    .block(
+                        Block::default()
+                            .borders(Borders::NONE)
+                            .padding(Padding::new(1, 0, 1, 0)),
+                    )
+                    .x_axis(
+                        Axis::default()
+                            .style(match app.line_chart.focused() {
+                                true => focused_style,
+                                false => Style::default().fg(Color::Gray),
+                            })
+                            .bounds([x_bounds[0], x_bounds[x_bounds.len() - 1]])
+                            .labels(x_labels.iter().cloned().map(Span::from).collect()),
+                    )
+                    .y_axis(
+                        Axis::default()
+                            // https://github.com/ratatui-org/ratatui/issues/379
+                            // .title(Span::styled("num of banners", Style::default()))
+                            .style(match app.line_chart.focused() {
+                                true => focused_style,
+                                false => Style::default().fg(Color::Gray),
+                            })
+                            .bounds([y_bounds[0], y_bounds[y_bounds.len() - 1]])
+                            .labels(y_labels.iter().cloned().map(Span::from).collect())
+                            .labels_alignment(Alignment::Center),
+                    );
 
-                // Have to rebuild Y Axis data from selected charts
-                let mut max_y_axis = 0.0;
+                frame.render_widget(query_chart, main_layouts[1]);
+            }
+        }
 
-                for index in app.saved_queries.state.selected_indexes() {
-                    let query = &app.queries[*index];
-                    match app.charts.get(query) {
-                        Some(chart) => {
-                            datasets.push(
-                                Dataset::default()
-                                    // .name(query.to_owned())
-                                    .marker(symbols::Marker::Braille)
-                                    .graph_type(GraphType::Line)
-                                    .style(Style::default().fg(query_colors[query]))
-                                    .data(&chart.datasets[0].data),
-                            );
+        // Build facets blocks corresponding to selected query
+        match app.charts.get(selected_query) {
+            Some(chart) => {
+                let mut facet_colors: HashMap<String, Color> = HashMap::new();
+                let mut facet_lines: Vec<String> = vec![];
 
-                            let chart_y_axis = chart.y_bounds[chart.y_bounds.len() - 1];
-                            if chart_y_axis > max_y_axis {
-                                max_y_axis = chart_y_axis;
+                // Load facet values if any
+                match &chart.facets {
+                    Some(chart) => {
+                        let mut facet_items: Vec<MultiListItem> = vec![];
+
+                        for (mut index, point) in chart.datasets.iter().enumerate() {
+                            // Just a bit catch, but 50 defined colors are too many, and we shouldn't overflow widget
+                            while index >= colors_len {
+                                index -= colors_len;
                             }
+                            let label_color = LINE_COLORS[index];
+                            facet_colors.insert(point.label.to_owned(), label_color);
+
+                            let lines = vec![Line::from(vec![point.label.to_owned().into()])];
+                            facet_items.push(
+                                MultiListItem::new(lines).style(Style::default().fg(label_color)),
+                            );
+                            facet_lines.push(point.label.to_owned());
                         }
-                        None => {}
-                    }
-                }
 
-                let y_bounds = vec![0.0, max_y_axis];
-                // Convert float to human-readable format
-                let y_labels = vec![
-                    String::from("0"),
-                    ((max_y_axis / 2.0) as i64).human_count_bare().to_string(),
-                    (max_y_axis as i64).human_count_bare().to_string(),
-                ];
+                        // Default highlight first few lines only on first initialize
+                        if app.facet_values.items.is_empty() && !facet_lines.is_empty() {
+                            app.facet_values.state.with_selected_indexes(Vec::from_iter(
+                                0..(cmp::min(SELECTED_FACET_LINES, facet_lines.len() - 1)),
+                            ));
+                        }
+                        app.facet_values.set_items(facet_lines.clone());
 
-                if !datasets.is_empty() {
-                    let query_chart = Chart::new(datasets)
-                        .block(
-                            Block::default()
-                                .borders(Borders::NONE)
-                                .padding(Padding::new(1, 0, 1, 0)),
-                        )
-                        .x_axis(
-                            Axis::default()
-                                .style(match app.line_chart.focused() {
-                                    true => focused_style,
-                                    false => Style::default().fg(Color::Gray),
-                                })
-                                .bounds([x_bounds[0], x_bounds[x_bounds.len() - 1]])
-                                .labels(x_labels.iter().cloned().map(Span::from).collect()),
-                        )
-                        .y_axis(
-                            Axis::default()
-                                // https://github.com/ratatui-org/ratatui/issues/379
-                                // .title(Span::styled("num of banners", Style::default()))
-                                .style(match app.line_chart.focused() {
-                                    true => focused_style,
-                                    false => Style::default().fg(Color::Gray),
-                                })
-                                .bounds([y_bounds[0], y_bounds[y_bounds.len() - 1]])
-                                .labels(y_labels.iter().cloned().map(Span::from).collect())
-                                .labels_alignment(Alignment::Center),
+                        let facet_values: MultiList<'_> = MultiList::new(facet_items)
+                            .block(
+                                Block::default()
+                                    .borders(Borders::ALL)
+                                    .title("Facet values")
+                                    .border_style(match app.facet_values.focused() {
+                                        true => focused_style,
+                                        _ => Style::default(),
+                                    }),
+                            )
+                            .highlight_style(
+                                Style::default()
+                                    .fg(Color::Black)
+                                    .bg(Color::LightYellow)
+                                    .add_modifier(Modifier::BOLD),
+                            );
+                        frame.render_stateful_widget(
+                            facet_values,
+                            sidebar_layouts[1],
+                            &mut app.facet_values.state,
                         );
 
-                    frame.render_widget(query_chart, main_layouts[1]);
-                }
-            }
+                        // Load facets chart
+                        if app.facet_values.focused() {
+                            let selected_facets = app.facet_values.state.selected_indexes();
+                            let datasets = chart
+                                .datasets
+                                .iter()
+                                .enumerate()
+                                .filter(|(index, _)| selected_facets.contains(index))
+                                .map(|(_, point)| {
+                                    Dataset::default()
+                                        // Disable chart legend as we already show color in facet values block,
+                                        // current legend won't display if facet line too long.
+                                        // .name(point.label.to_owned())
+                                        .marker(symbols::Marker::Braille)
+                                        .graph_type(GraphType::Line)
+                                        .style(
+                                            Style::default()
+                                                .fg(facet_colors[&point.label.to_owned()]),
+                                        )
+                                        .data(&point.data)
+                                })
+                                .collect();
 
-            // Build facets blocks corresponding to selected query
-            match app.charts.get(selected_query) {
-                Some(chart) => {
-                    let mut facet_colors: HashMap<String, Color> = HashMap::new();
-                    let mut facet_lines: Vec<String> = vec![];
-
-                    // Load facet values if any
-                    match &chart.facets {
-                        Some(chart) => {
-                            let mut facet_items: Vec<MultiListItem> = vec![];
-
-                            for (mut index, point) in chart.datasets.iter().enumerate() {
-                                // Just a bit catch, but 50 defined colors are too many, and we shouldn't overflow widget
-                                while index >= colors_len {
-                                    index -= colors_len;
-                                }
-                                let label_color = LINE_COLORS[index];
-                                facet_colors.insert(point.label.to_owned(), label_color);
-
-                                let lines = vec![Line::from(vec![point.label.to_owned().into()])];
-                                facet_items.push(
-                                    MultiListItem::new(lines)
-                                        .style(Style::default().fg(label_color)),
-                                );
-                                facet_lines.push(point.label.to_owned());
-                            }
-
-                            // Default highlight first few lines only on first initialize
-                            if app.facet_values.items.is_empty() && !facet_lines.is_empty() {
-                                app.facet_values.state.with_selected_indexes(Vec::from_iter(
-                                    0..(cmp::min(SELECTED_FACET_LINES, facet_lines.len() - 1)),
-                                ));
-                            }
-                            app.facet_values.set_items(facet_lines.clone());
-
-                            let facet_values: MultiList<'_> = MultiList::new(facet_items)
+                            let facet_chart = Chart::new(datasets)
                                 .block(
                                     Block::default()
-                                        .borders(Borders::ALL)
-                                        .title("Facet values")
-                                        .border_style(match app.facet_values.focused() {
-                                            true => focused_style,
-                                            _ => Style::default(),
-                                        }),
+                                        .borders(Borders::NONE)
+                                        .padding(Padding::new(1, 0, 1, 0)),
                                 )
-                                .highlight_style(
-                                    Style::default()
-                                        .fg(Color::Black)
-                                        .bg(Color::LightYellow)
-                                        .add_modifier(Modifier::BOLD),
+                                .x_axis(
+                                    Axis::default()
+                                        .style(match app.line_chart.focused() {
+                                            true => focused_style,
+                                            false => Style::default().fg(Color::Gray),
+                                        })
+                                        .bounds([
+                                            chart.x_bounds[0],
+                                            chart.x_bounds[chart.x_bounds.len() - 1],
+                                        ])
+                                        .labels(
+                                            chart
+                                                .x_labels
+                                                .iter()
+                                                .cloned()
+                                                .map(Span::from)
+                                                .collect(),
+                                        ),
+                                )
+                                .y_axis(
+                                    Axis::default()
+                                        .style(match app.line_chart.focused() {
+                                            true => focused_style,
+                                            false => Style::default().fg(Color::Gray),
+                                        })
+                                        .bounds([
+                                            chart.y_bounds[0],
+                                            chart.y_bounds[chart.y_bounds.len() - 1],
+                                        ])
+                                        .labels(
+                                            chart
+                                                .y_labels
+                                                .iter()
+                                                .cloned()
+                                                .map(Span::from)
+                                                .collect(),
+                                        )
+                                        .labels_alignment(Alignment::Center),
                                 );
-                            frame.render_stateful_widget(
-                                facet_values,
-                                sidebar_layouts[1],
-                                &mut app.facet_values.state,
-                            );
 
-                            // Load facets chart
-                            if app.facet_values.focused() {
-                                let selected_facets = app.facet_values.state.selected_indexes();
-                                let datasets = chart
-                                    .datasets
-                                    .iter()
-                                    .enumerate()
-                                    .filter(|(index, _)| selected_facets.contains(index))
-                                    .map(|(_, point)| {
-                                        Dataset::default()
-                                            // Disable chart legend as we already show color in facet values block,
-                                            // current legend won't display if facet line too long.
-                                            // .name(point.label.to_owned())
-                                            .marker(symbols::Marker::Braille)
-                                            .graph_type(GraphType::Line)
-                                            .style(
-                                                Style::default()
-                                                    .fg(facet_colors[&point.label.to_owned()]),
-                                            )
-                                            .data(&point.data)
-                                    })
-                                    .collect();
-
-                                let facet_chart = Chart::new(datasets)
-                                    .block(
-                                        Block::default()
-                                            .borders(Borders::NONE)
-                                            .padding(Padding::new(1, 0, 1, 0)),
-                                    )
-                                    .x_axis(
-                                        Axis::default()
-                                            .style(match app.line_chart.focused() {
-                                                true => focused_style,
-                                                false => Style::default().fg(Color::Gray),
-                                            })
-                                            .bounds([
-                                                chart.x_bounds[0],
-                                                chart.x_bounds[chart.x_bounds.len() - 1],
-                                            ])
-                                            .labels(
-                                                chart
-                                                    .x_labels
-                                                    .iter()
-                                                    .cloned()
-                                                    .map(Span::from)
-                                                    .collect(),
-                                            ),
-                                    )
-                                    .y_axis(
-                                        Axis::default()
-                                            .style(match app.line_chart.focused() {
-                                                true => focused_style,
-                                                false => Style::default().fg(Color::Gray),
-                                            })
-                                            .bounds([
-                                                chart.y_bounds[0],
-                                                chart.y_bounds[chart.y_bounds.len() - 1],
-                                            ])
-                                            .labels(
-                                                chart
-                                                    .y_labels
-                                                    .iter()
-                                                    .cloned()
-                                                    .map(Span::from)
-                                                    .collect(),
-                                            )
-                                            .labels_alignment(Alignment::Center),
-                                    );
-
-                                frame.render_widget(facet_chart, main_layouts[1]);
-                            }
+                            frame.render_widget(facet_chart, main_layouts[1]);
                         }
-                        None => {}
                     }
-                }
-                None => {
-                    // Error or no results query don't save to app.charts
-                    if !app.api_error.is_empty() {
-                        frame.render_widget(error_widget, main_layouts[1]);
-                    } else if app.no_results {
-                        frame.render_widget(no_results_widget, main_layouts[1]);
-                    }
-
-                    // Unselect all lines
-                    app.saved_queries.state.with_selected_indexes(vec![]);
-                    app.facet_values.state.with_selected_indexes(vec![]);
-                    app.saved_queries.state.select(None);
-                    app.facet_values.state.select(None);
+                    None => {}
                 }
             }
+            None => {
+                // Error or no results query don't save to app.charts
+                if !app.api_error.is_empty() {
+                    frame.render_widget(error_widget, main_layouts[1]);
+                } else if app.no_results {
+                    frame.render_widget(no_results_widget, main_layouts[1]);
+                }
 
-            // Used to load different total chart
-            app.prev_query = selected_query.to_owned();
+                // Unselect all lines
+                app.saved_queries.state.with_selected_indexes(vec![]);
+                app.facet_values.state.with_selected_indexes(vec![]);
+                app.saved_queries.state.select(None);
+                app.facet_values.state.select(None);
+            }
         }
+
+        // Used to load different total chart
+        app.prev_query = selected_query.to_owned();
     }
 }

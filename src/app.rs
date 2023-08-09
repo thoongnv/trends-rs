@@ -50,6 +50,7 @@ pub struct App {
     api_key: String,
     pub no_results: bool,
     pub queries: Vec<String>, // Hold success queries (exclude no results or errored out query)
+    pub last_query: String,   // Last submitted query
     pub prev_query: String,
 
     pub charts: BTreeMap<String, Chart>,
@@ -96,6 +97,7 @@ impl App {
             api_key,
 
             queries: vec![],
+            last_query: String::new(),
             prev_query: String::new(),
             charts: BTreeMap::new(),
             api_error: String::new(),
@@ -158,11 +160,17 @@ impl App {
         // TODO Should we move the process out of tick event, maybe custom update event?
         match self.receiver.try_recv() {
             Ok(resp) => {
+                let query = self.search_input.get_input().to_owned();
+                let facets = self.facets_input.get_input().trim().to_owned();
+                let encoded_query: String = form_urlencoded::Serializer::new(String::new())
+                    .append_pair("query", &query)
+                    .append_pair("facets", &facets)
+                    .finish();
+                // Save last submitted query
+                self.last_query = encoded_query.to_owned();
+
                 match resp {
                     Ok(response) => {
-                        let query = self.search_input.get_input().to_owned();
-                        let facets = self.facets_input.get_input().trim().to_owned();
-
                         // As resp_json["facets"]["key"] key is dynamic based on user request,
                         // I din't find a proper way to define JSON response mapping struct for it so parse manually
                         let resp_str = response.into_string()?;
@@ -337,12 +345,6 @@ impl App {
                                         }
                                         false => None,
                                     };
-
-                                    let encoded_query: String =
-                                        form_urlencoded::Serializer::new(String::new())
-                                            .append_pair("query", &query)
-                                            .append_pair("facets", &facets)
-                                            .finish();
 
                                     // Save data to display chart
                                     self.charts.insert(
