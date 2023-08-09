@@ -1,5 +1,5 @@
 use crate::app::AppResult;
-use crossterm::event::{self, Event as CrosstermEvent, KeyEvent, MouseEvent};
+use crossterm::event::{self, Event as CrosstermEvent, KeyEvent, KeyEventKind, MouseEvent};
 use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -45,10 +45,16 @@ impl EventHandler {
 
                     if event::poll(timeout).expect("no events available") {
                         match event::read().expect("unable to read event") {
-                            CrosstermEvent::Key(e) => sender.send(Event::Key(e)),
+                            CrosstermEvent::Key(e) => {
+                                // Duplicate key on Windows: https://github.com/crossterm-rs/crossterm/issues/752
+                                if e.kind == KeyEventKind::Press {
+                                    let _ = sender.send(Event::Key(e));
+                                }
+                                Ok(())
+                            }
                             CrosstermEvent::Mouse(e) => sender.send(Event::Mouse(e)),
                             CrosstermEvent::Resize(w, h) => sender.send(Event::Resize(w, h)),
-                            _ => unimplemented!(),
+                            _ => Ok(()),
                         }
                         .expect("failed to send terminal event")
                     }
