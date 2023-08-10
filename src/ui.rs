@@ -463,11 +463,32 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
                             facet_lines.push(point.label.to_owned());
                         }
 
-                        // Default highlight first few lines only on first initialize
-                        if app.facet_values.items.is_empty() && !facet_lines.is_empty() {
-                            app.facet_values.state.with_selected_indexes(Vec::from_iter(
-                                0..(cmp::min(SELECTED_FACET_LINES, facet_lines.len() - 1)),
-                            ));
+                        // Highlight facet lines
+                        if !facet_lines.is_empty() {
+                            match state.facet_indexes.get(selected_query) {
+                                Some(facet_index) => {
+                                    // Load previous selected indexes
+                                    app.facet_values.state.with_selected_indexes(
+                                        facet_index.selected_indexes.to_owned(),
+                                    );
+
+                                    if selected_query != &app.prev_query {
+                                        app.facet_values.state.select(facet_index.selected);
+                                    }
+                                }
+                                None => {
+                                    // On first initialize
+                                    app.facet_values.state.with_selected_indexes(Vec::from_iter(
+                                        0..(cmp::min(SELECTED_FACET_LINES, facet_lines.len())),
+                                    ));
+                                    app.facet_values.state.select(Some(
+                                        app.facet_values.state.selected_indexes().len(),
+                                    ));
+                                }
+                            }
+                            // Attach state key for saving indexes later on Enter
+                            app.facet_values
+                                .set_state_key(Some(selected_query.to_owned()));
                         }
                         app.facet_values.set_items(facet_lines.clone());
 

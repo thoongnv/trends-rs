@@ -2,6 +2,7 @@ use clap::{Parser, Subcommand};
 use crossterm::event::Event as CrosstermEvent;
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
+use std::collections::HashMap;
 use std::io;
 use std::sync::mpsc;
 use strend::app::{App, AppResult, AppState, EXIT_ERROR_CODE, EXIT_SUCCESS_CODE};
@@ -63,6 +64,7 @@ fn main() -> AppResult<()> {
         unfocused: true,
         submitted: false,
         first_render: true,
+        facet_indexes: HashMap::new(),
         sender,
     };
 

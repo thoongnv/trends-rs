@@ -33,7 +33,7 @@ pub struct Points {
     pub data: Vec<(f64, f64)>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Chart {
     pub datasets: Vec<Points>,
     pub x_bounds: Vec<f64>,
@@ -66,11 +66,20 @@ pub struct App {
     pub receiver: mpsc::Receiver<Result<ureq::Response, ureq::Error>>,
 }
 
-// Shared state between UI and widgets as using App.some_property caused some mut borrow errors
+#[derive(Debug)]
+pub struct FacetIndex {
+    pub selected: Option<usize>,
+    pub selected_indexes: Vec<usize>,
+}
+
+// Shared state between UI and widgets because we can't pass &mut App when calling below, it raised borrow errors
+// src/handler.rs: widgets[widget_index].handle_events(event.clone(), state);
+#[derive(Debug)]
 pub struct AppState {
     pub unfocused: bool,
     pub submitted: bool,
     pub first_render: bool,
+    pub facet_indexes: HashMap<String, FacetIndex>, // Saved <query.facet_values, selected_indexes>
     pub sender: mpsc::Sender<Result<ureq::Response, ureq::Error>>,
 }
 
@@ -340,7 +349,7 @@ impl App {
                                                 y_bounds,
                                                 x_labels,
                                                 y_labels,
-                                                facets: None,
+                                                ..Default::default()
                                             }))
                                         }
                                         false => None,
@@ -360,6 +369,7 @@ impl App {
                                             x_labels,
                                             y_labels,
                                             facets: facets_data,
+                                            ..Default::default()
                                         },
                                     );
 

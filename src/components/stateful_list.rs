@@ -1,4 +1,8 @@
-use crate::{app::AppState, components::Component, widgets::list::MultiListState};
+use crate::{
+    app::{AppState, FacetIndex},
+    components::Component,
+    widgets::list::MultiListState,
+};
 
 use crossterm::event::{Event, KeyCode};
 use ratatui::widgets::ListState;
@@ -87,6 +91,7 @@ impl<T> Component for StatefulList<T> {
 #[derive(Debug)]
 pub struct MultiStatefulList<T> {
     pub state: MultiListState,
+    pub state_key: Option<String>,
     pub items: Vec<T>,
     pub focused: bool,
 }
@@ -95,6 +100,7 @@ impl<T> MultiStatefulList<T> {
     pub fn new() -> MultiStatefulList<T> {
         MultiStatefulList {
             state: MultiListState::default(),
+            state_key: None, // Saved selected indexes with the key if exists
             items: vec![],
             focused: false,
         }
@@ -102,6 +108,10 @@ impl<T> MultiStatefulList<T> {
 
     pub fn set_items(&mut self, items: Vec<T>) {
         self.items = items;
+    }
+
+    pub fn set_state_key(&mut self, state_key: Option<String>) {
+        self.state_key = state_key;
     }
 
     fn next(&mut self) {
@@ -156,6 +166,17 @@ impl<T> Component for MultiStatefulList<T> {
                 _ => {}
             },
             _ => {}
+        }
+
+        // Save selected indexes of each facet values
+        if let Some(state_key) = &self.state_key {
+            state.facet_indexes.insert(
+                state_key.to_owned(),
+                FacetIndex {
+                    selected: self.state.selected(),
+                    selected_indexes: self.state.selected_indexes().to_owned(),
+                },
+            );
         }
     }
 

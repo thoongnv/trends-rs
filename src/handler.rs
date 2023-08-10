@@ -34,7 +34,6 @@ pub fn handle_events(event: Event, app: &mut App, state: &mut AppState) -> AppRe
                 Event::Key(key_event) => match key_event.code {
                     KeyCode::Enter => {
                         state.submitted = true;
-                        // TODO Pass app to widget to handle events without mut borrow errors
                         app.search(state.sender.clone())?;
                     }
                     _ => {}
