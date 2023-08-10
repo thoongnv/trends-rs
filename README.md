@@ -40,3 +40,12 @@ Options:
   -h, --help             Print help
   -V, --version          Print version
 ```
+
+## Debugging
+
+Our application rendered to `stderr`, so we could use `println!("dump variable: {:?}", variable);` in code and then pine the output to a log file.
+
+```shell
+$ cargo run > debug.log
+$ tail -f debug.log
+```

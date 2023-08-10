@@ -69,7 +69,7 @@ fn main() -> AppResult<()> {
     };
 
     // Initialize the terminal user interface.
-    let backend = CrosstermBackend::new(io::stdout());
+    let backend = CrosstermBackend::new(io::stderr());
     let terminal = Terminal::new(backend)?;
     let events = EventHandler::new(250);
     let mut tui = Tui::new(terminal, events);
