@@ -29,7 +29,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build: [linux, linux-arm, macos, windows]
+        build: [linux, linux-arm, macos, macos-arm, windows, windows-arm]
         include:
         - build: linux
           os: ubuntu-latest
@@ -43,10 +43,18 @@ jobs:
           os: macos-latest
           rust: stable
           target: x86_64-apple-darwin
+        - build: macos-arm
+          os: ubuntu-20.04
+          rust: stable
+          target: aarch64-apple-darwin
         - build: windows
           os: windows-latest
           rust: stable
           target: x86_64-pc-windows-msvc
+        - build: windows-arm
+          os: ubuntu-20.04
+          rust: stable
+          target: aarch64-pc-windows-msvc
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
@@ -58,6 +66,14 @@ jobs:
         profile: minimal
         override: true
         target: ${{ matrix.target }}
+
+    - name: Login to GitHub Container Registry
+      if: matrix.build == 'macos-arm' || matrix.build == 'windows-arm'
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GHCR_PAT }}
 
     - name: Use Cross
       shell: bash

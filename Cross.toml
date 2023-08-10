@@ -1,0 +1,5 @@
+[target.aarch64-apple-darwin]
+image = "ghcr.io/thoongnv/aarch64-apple-darwin-cross:latest"
+
+[target.aarch64-pc-windows-msvc]
+image = "ghcr.io/thoongnv/aarch64-pc-windows-msvc-cross:latest"
