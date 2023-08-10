@@ -155,7 +155,18 @@ impl<T> Component for MultiStatefulList<T> {
     fn handle_events(&mut self, event: Event, state: &mut AppState) {
         match event {
             Event::Key(key_event) => match key_event.code {
-                KeyCode::Left => self.unselect(),
+                KeyCode::Left => {
+                    self.state.with_selected_indexes(vec![]);
+                    self.unselect();
+                }
+                KeyCode::Right => {
+                    self.state
+                        .with_selected_indexes(Vec::from_iter(0..self.items.len()));
+
+                    if self.state.selected().is_none() {
+                        self.state.select(Some(self.items.len() - 1));
+                    }
+                }
                 KeyCode::Down => self.next(),
                 KeyCode::Up => self.previous(),
                 KeyCode::Enter => self.toggle(),

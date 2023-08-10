@@ -20,7 +20,7 @@ use crate::app::AppState;
 use crate::components::Component;
 
 // Pre parsed Trends Rgb colors from hex with https://github.com/emgyrz/colorsys.rs
-const LINE_COLORS: [Color; 50] = [
+const LINE_COLORS: [Color; 30] = [
     Color::Rgb(213, 5, 39),
     Color::Rgb(21, 137, 64),
     Color::Rgb(248, 152, 253),
@@ -51,26 +51,6 @@ const LINE_COLORS: [Color; 50] = [
     Color::Rgb(194, 129, 254),
     Color::Rgb(249, 43, 117),
     Color::Rgb(7, 201, 157),
-    Color::Rgb(169, 70, 170),
-    Color::Rgb(191, 213, 68),
-    Color::Rgb(22, 151, 126),
-    Color::Rgb(255, 106, 200),
-    Color::Rgb(168, 129, 120),
-    Color::Rgb(87, 118, 169),
-    Color::Rgb(103, 128, 7),
-    Color::Rgb(250, 147, 22),
-    Color::Rgb(133, 192, 112),
-    Color::Rgb(106, 162, 169),
-    Color::Rgb(152, 158, 93),
-    Color::Rgb(254, 145, 105),
-    Color::Rgb(205, 113, 74),
-    Color::Rgb(110, 208, 20),
-    Color::Rgb(197, 99, 156),
-    Color::Rgb(194, 50, 113),
-    Color::Rgb(105, 143, 252),
-    Color::Rgb(103, 130, 117),
-    Color::Rgb(197, 161, 33),
-    Color::Rgb(169, 120, 186),
 ];
 const MAX_SAVED_QUERIES: usize = 5;
 const SELECTED_FACET_LINES: usize = 5;
@@ -278,6 +258,16 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
             query_items.push(MultiListItem::new(lines).style(Style::default().fg(label_color)));
             query_lines.push(query.to_owned());
         }
+
+        // Auto highlight on first initialize if have only one saved query and there is no error
+        if app.charts.len() == 1
+            && app.saved_queries.items.is_empty()
+            && app.api_error.is_empty()
+            && !app.no_results
+        {
+            app.saved_queries.state.with_selected_indexes(vec![0]);
+            app.saved_queries.state.select(Some(0));
+        }
         app.saved_queries.set_items(query_lines.clone());
 
         let saved_queries = MultiList::new(query_items)
@@ -327,13 +317,7 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
                 }
             }
         } else {
-            // Auto highlight first query if there is no error
-            if app.charts.len() == 1 && app.api_error.is_empty() && !app.no_results {
-                app.saved_queries.state.with_selected_indexes(vec![0]);
-                app.saved_queries.state.select(Some(0));
-            }
-
-            // Only handle selected event in StatefulList, the above `app.saved_queries.state.select` won't go there
+            // Only handle users interactive event in MultiStatefulList, the above `app.saved_queries.state.select` won't go there
             match app.saved_queries.state.selected() {
                 Some(index) => {
                     for (i, query) in query_lines.iter().enumerate() {
@@ -449,7 +433,7 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
                         let mut facet_items: Vec<MultiListItem> = vec![];
 
                         for (mut index, point) in chart.datasets.iter().enumerate() {
-                            // Just a bit catch, but 50 defined colors are too many, and we shouldn't overflow widget
+                            // Just a bit catch, but 30 defined colors are too many, and we shouldn't overflow widget
                             while index >= colors_len {
                                 index -= colors_len;
                             }

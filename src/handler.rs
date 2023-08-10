@@ -3,7 +3,7 @@ use crossterm::event::{Event, KeyCode, KeyModifiers};
 
 /// Handles the key events and updates the state of [`App`].
 pub fn handle_events(event: Event, app: &mut App, state: &mut AppState) -> AppResult<()> {
-    // Use to prevent loop StatefulList.state.select(Some(index))
+    // Use to prevent loop MultiStatefulList.state.select(Some(index))
     state.submitted = false;
 
     // On unfocused any panels
