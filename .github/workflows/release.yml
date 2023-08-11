@@ -83,17 +83,17 @@ jobs:
       run: ${{ env.CARGO }} build --verbose --release ${{ env.TARGET_FLAGS }}
 
     - name: Strip release binary (linux and macos)
-      if: matrix.build == 'linux' || matrix.build == 'macos' || matrix.build == 'macos-arm'
+      if: matrix.build == 'linux' || matrix.build == 'macos'
       run: strip "target/${{ matrix.target }}/release/strend"
 
     - name: Strip release binary (arm)
-      if: matrix.build == 'linux-arm'
+      if: matrix.build == 'linux-arm' || matrix.build == 'macos-arm'
       run: |
         docker run --rm -v \
           "$PWD/target:/target:Z" \
           rustembedded/cross:aarch64-unknown-linux-gnu \
           aarch64-linux-gnu-strip \
-          /target/aarch64-unknown-linux-gnu/release/strend
+          "/target/${{ matrix.target }}/release/strend"
 
     - name: Build archive
       shell: bash
