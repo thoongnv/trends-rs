@@ -1,0 +1,35 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: check-yaml
+      - id: trailing-whitespace
+
+  - repo: local
+    hooks:
+      - id: cargo-fmt
+        name: Format Rust code
+        # rustfmt allow to format specific files which different with cargo fmt
+        entry: bash -c 'rustfmt "$@"; git add -u' --
+        language: rust
+        files: \.rs$
+
+      - id: cargo-check
+        name: Check the package for errors
+        entry: bash -c 'cargo check; git add -u' --
+        language: rust
+
+      - id: cargo-clippy
+        name: Lint Rust code
+        entry: bash -c 'cargo clippy; git add -u' --
+        language: rust
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.17.0
+    hooks:
+      - id: gitleaks
+        description: Detect hardcoded secrets using Gitleaks
+        entry: gitleaks protect --verbose --redact --staged
+        language: golang
+        pass_filenames: false
+
