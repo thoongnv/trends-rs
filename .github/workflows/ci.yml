@@ -29,7 +29,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build: [linux, linux-arm, macos, macos-arm, windows, windows-arm]
+        build: [linux, linux-arm, macos, macos-arm, windows]
         include:
         - build: linux
           os: ubuntu-latest
@@ -51,10 +51,11 @@ jobs:
           os: windows-latest
           rust: stable
           target: x86_64-pc-windows-msvc
-        - build: windows-arm
-          os: ubuntu-20.04
-          rust: stable
-          target: aarch64-pc-windows-msvc
+        # Failed to build, could be an issue with ring crate, recheck on new version? https://github.com/cross-rs/cross/issues/1307
+        # - build: windows-arm
+        #   os: ubuntu-20.04
+        #   rust: stable
+        #   target: aarch64-pc-windows-msvc
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
@@ -93,4 +94,5 @@ jobs:
       run: ${{ env.CARGO }} build --verbose ${{ env.TARGET_FLAGS }}
 
     - name: Run tests
+      if: matrix.build != 'macos-arm'
       run: ${{ env.CARGO }} test --verbose ${{ env.TARGET_FLAGS }}

@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build: [linux, linux-arm, macos, macos-arm, windows, windows-arm]
+        build: [linux, linux-arm, macos, macos-arm, windows]
         include:
         - build: linux
           os: ubuntu-latest
@@ -43,10 +43,6 @@ jobs:
           os: windows-latest
           rust: stable
           target: x86_64-pc-windows-msvc
-        - build: windows-arm
-          os: ubuntu-20.04
-          rust: stable
-          target: aarch64-pc-windows-msvc
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
