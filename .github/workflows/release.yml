@@ -86,15 +86,6 @@ jobs:
       if: matrix.build == 'linux' || matrix.build == 'macos'
       run: strip "target/${{ matrix.target }}/release/strend"
 
-    - name: Strip release binary (arm)
-      if: matrix.build == 'linux-arm' || matrix.build == 'macos-arm'
-      run: |
-        docker run --rm -v \
-          "$PWD/target:/target:Z" \
-          rustembedded/cross:aarch64-unknown-linux-gnu \
-          aarch64-linux-gnu-strip \
-          "/target/${{ matrix.target }}/release/strend"
-
     - name: Build archive
       shell: bash
       run: |
@@ -126,6 +117,12 @@ jobs:
         fetch-depth: 1
 
     - name: Publish
-      run: cargo publish
+      shell: bash
+      # Only publish if tag is newer than current crate version
+      run: |
+        latest_version=$(cargo search strend | cut -d "#" -f 1 | cut -d "=" -f 2 | sed -e 's/^[[:space:]]*//')
+        if [ $latest_version = "${{ github.ref_name }}" ]; then
+          cargo publish
+        fi
       env:
         CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
