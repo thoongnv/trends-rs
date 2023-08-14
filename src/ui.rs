@@ -96,7 +96,7 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
     ];
     // Get focused widget keys
     for (_, widget) in app.get_widgets().into_iter().enumerate() {
-        if widget.focused() {
+        if widget.focused() && !widget.hidden() {
             help_keys = widget.help_keys().to_owned();
             help_keys.push(format!("Unfocused [{}]", KeySymbols::ESC.to_string()));
             break;

@@ -5,11 +5,15 @@ use crossterm::event::{Event, KeyCode};
 #[derive(Debug)]
 pub struct LineChart {
     focused: bool,
+    hidden: bool,
 }
 
 impl LineChart {
     pub fn new() -> Self {
-        Self { focused: false }
+        Self {
+            focused: false,
+            hidden: false,
+        }
     }
 }
 
@@ -32,7 +36,15 @@ impl Component for LineChart {
         self.focused
     }
 
-    fn set_focus(&mut self, focus: bool) {
-        self.focused = focus;
+    fn hidden(&self) -> bool {
+        self.hidden
+    }
+
+    fn set_focus(&mut self, focused: bool) {
+        self.focused = focused;
+    }
+
+    fn set_hide(&mut self, hidden: bool) {
+        self.hidden = hidden;
     }
 }

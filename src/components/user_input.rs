@@ -16,6 +16,8 @@ pub struct UserInput {
     messages: Vec<String>,
     /// If panel on focused by `Tab`
     focused: bool,
+    /// The widget is not rendered in the UI
+    hidden: bool,
 }
 
 impl UserInput {
@@ -26,6 +28,7 @@ impl UserInput {
             cursor_position,
             messages: Vec::new(),
             focused: false,
+            hidden: false,
         }
     }
 
@@ -122,8 +125,16 @@ impl Component for UserInput {
         self.focused
     }
 
+    fn hidden(&self) -> bool {
+        self.hidden
+    }
+
     fn set_focus(&mut self, focused: bool) {
         self.focused = focused;
+    }
+
+    fn set_hide(&mut self, hidden: bool) {
+        self.hidden = hidden;
     }
 
     fn allow_enter(&self) -> bool {

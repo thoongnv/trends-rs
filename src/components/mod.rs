@@ -58,7 +58,11 @@ pub trait Component {
 
     fn focused(&self) -> bool;
 
+    fn hidden(&self) -> bool;
+
     fn set_focus(&mut self, focus: bool) {}
+
+    fn set_hide(&mut self, hide: bool) {}
 
     fn allow_enter(&self) -> bool {
         false

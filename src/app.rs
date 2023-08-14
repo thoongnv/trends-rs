@@ -127,7 +127,13 @@ impl App {
             receiver,
         };
 
-        app.widget_index = app.get_widgets().len() - 1; // Point to last panel so first Tab will focus on searchbox
+        // Default hide some widgets
+        app.saved_queries.set_hide(true);
+        app.facet_values.set_hide(true);
+        app.line_chart.set_hide(true);
+
+        // Point to last panel so first Tab will focus on searchbox
+        app.widget_index = app.get_widgets().len() - 1;
         app
     }
 
@@ -143,7 +149,7 @@ impl App {
 
     pub fn select_widget(&mut self, widget_index: usize) {
         for (index, widget) in self.get_widgets().into_iter().enumerate() {
-            if widget_index == index {
+            if widget_index == index && !widget.hidden() {
                 widget.set_focus(true);
             } else {
                 widget.set_focus(false);
@@ -419,6 +425,23 @@ impl App {
                 self.blocking = 0;
             }
             Err(_) => {}
+        }
+
+        // Some widgets need to hide and unfocused (not handle events)
+        if self.queries.is_empty() {
+            if !self.api_error.is_empty() || self.no_results {
+                self.saved_queries.set_hide(true);
+                self.facet_values.set_hide(true);
+                self.line_chart.set_hide(true);
+            }
+        } else {
+            if !self.api_error.is_empty() || self.no_results {
+                self.line_chart.set_hide(true);
+            } else {
+                self.saved_queries.set_hide(false);
+                self.facet_values.set_hide(false);
+                self.line_chart.set_hide(false);
+            }
         }
 
         Ok(())

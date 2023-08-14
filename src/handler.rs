@@ -26,19 +26,22 @@ pub fn handle_events(event: Event, app: &mut App, state: &mut AppState) -> AppRe
         // Let each widget handle events
         let widget_index = app.widget_index;
         let mut widgets = app.get_widgets();
-        widgets[widget_index].handle_events(event.clone(), state);
 
-        // Currently, only handle Enter key event if focused searchbox
-        if widgets[widget_index].allow_enter() {
-            match event {
-                Event::Key(key_event) => match key_event.code {
-                    KeyCode::Enter => {
-                        state.submitted = true;
-                        app.search(state.sender.clone())?;
-                    }
+        if !widgets[widget_index].hidden() {
+            widgets[widget_index].handle_events(event.clone(), state);
+
+            // Currently, only handle Enter key event if focused searchbox
+            if widgets[widget_index].allow_enter() {
+                match event {
+                    Event::Key(key_event) => match key_event.code {
+                        KeyCode::Enter => {
+                            state.submitted = true;
+                            app.search(state.sender.clone())?;
+                        }
+                        _ => {}
+                    },
                     _ => {}
-                },
-                _ => {}
+                }
             }
         }
     }

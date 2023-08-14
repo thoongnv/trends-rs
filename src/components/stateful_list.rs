@@ -94,6 +94,7 @@ pub struct MultiStatefulList<T> {
     pub state_key: Option<String>,
     pub items: Vec<T>,
     pub focused: bool,
+    pub hidden: bool,
 }
 
 impl<T> MultiStatefulList<T> {
@@ -103,6 +104,7 @@ impl<T> MultiStatefulList<T> {
             state_key: None, // Saved selected indexes with the key if exists
             items: vec![],
             focused: false,
+            hidden: false,
         }
     }
 
@@ -195,8 +197,16 @@ impl<T> Component for MultiStatefulList<T> {
         self.focused
     }
 
-    fn set_focus(&mut self, focus: bool) {
-        self.focused = focus;
+    fn hidden(&self) -> bool {
+        self.hidden
+    }
+
+    fn set_focus(&mut self, focused: bool) {
+        self.focused = focused;
+    }
+
+    fn set_hide(&mut self, hidden: bool) {
+        self.hidden = hidden;
     }
 
     fn help_keys(&self) -> Vec<String> {
