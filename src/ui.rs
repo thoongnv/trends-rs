@@ -92,23 +92,34 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
     // frame.render_widget(help_commands, layouts[2]);
 
     // Some reuse widgets
+    let error_block = Block::default()
+        .title("Error")
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Red))
+        .style(Style::default().fg(Color::Red));
     let error_widget = Paragraph::new(format!(
         "{}\n\
-        API documents: https://developer.shodan.io/api/trends
+        API documents: https://developer.shodan.io/api
     ",
         app.api_error.to_owned()
     ))
-    .block(
-        Block::default()
-            .title("Error")
-            .borders(Borders::ALL)
-            .border_style(Style::default().fg(Color::Red)),
-    )
     .style(Style::default().fg(Color::Red))
     .alignment(Alignment::Center);
-    let no_results_widget: Paragraph<'_> = Paragraph::new("No results found")
-        .block(Block::default().title("Info").borders(Borders::ALL))
-        .alignment(Alignment::Center);
+    let info_block = Block::default().title("Info").borders(Borders::ALL);
+    let no_results_widget: Paragraph<'_> =
+        Paragraph::new("No results found").alignment(Alignment::Center);
+    // A wrapper block used to render info/ no results/ error widget which align center vertically and horizontally
+    let center_layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(
+            [
+                Constraint::Percentage(40),
+                Constraint::Percentage(20),
+                Constraint::Percentage(40),
+            ]
+            .as_ref(),
+        )
+        .split(layouts[1]);
 
     let colors_len = LINE_COLORS.len();
     let focused_style = Style::default().fg(Color::Yellow);
@@ -214,15 +225,17 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
             dots.push(String::from(" "));
         }
 
-        let loading = Paragraph::new(format!("Searching{}\n", dots.join("")))
-            .block(Block::default().borders(Borders::ALL).border_style(
-                match app.line_chart.focused() {
+        let wrapper_block =
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(match app.line_chart.focused() {
                     true => focused_style,
                     _ => Style::default(),
-                },
-            ))
-            .alignment(Alignment::Center);
-        frame.render_widget(loading, layouts[1]);
+                });
+        let loading =
+            Paragraph::new(format!("Searching{}\n", dots.join(""))).alignment(Alignment::Center);
+        frame.render_widget(wrapper_block, layouts[1]);
+        frame.render_widget(loading, center_layout[1]);
 
         app.blocking += 1;
         // Only show 3 dots
@@ -232,19 +245,22 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
     } else if app.queries.is_empty() {
         // First query errored out or has no results
         if !app.api_error.is_empty() {
-            frame.render_widget(error_widget, layouts[1]);
+            frame.render_widget(error_block, layouts[1]);
+            frame.render_widget(error_widget, center_layout[1]);
         } else if app.no_results {
-            frame.render_widget(no_results_widget, layouts[1]);
+            frame.render_widget(info_block, layouts[1]);
+            frame.render_widget(no_results_widget, center_layout[1]);
         } else {
             // Launched without search query
+            frame.render_widget(info_block, layouts[1]);
+
             let welcome = Paragraph::new(
                 "Make search by `Enter` a query in search box.\n\
                         Press `Esc`/ double `Esc` or `Ctrl-C` to stop running\n\
                         Switch between panels by `Tab`",
             )
-            .block(Block::default().title("Info").borders(Borders::ALL))
             .alignment(Alignment::Center);
-            frame.render_widget(welcome, layouts[1]);
+            frame.render_widget(welcome, center_layout[1]);
         }
     } else {
         // We have saved queries then we should show it, errors on the right side if any
@@ -588,9 +604,11 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
             None => {
                 // Error or no results query don't save to app.charts
                 if !app.api_error.is_empty() {
-                    frame.render_widget(error_widget, main_layouts[1]);
+                    frame.render_widget(error_block, layouts[1]);
+                    frame.render_widget(error_widget, center_layout[1]);
                 } else if app.no_results {
-                    frame.render_widget(no_results_widget, main_layouts[1]);
+                    frame.render_widget(info_block, layouts[1]);
+                    frame.render_widget(no_results_widget, center_layout[1]);
                 }
 
                 // Unselect all lines
