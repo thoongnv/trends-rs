@@ -46,7 +46,8 @@ pub struct Chart {
 #[derive(Debug)]
 pub struct App {
     pub running: bool,
-    pub blocking: bool, // For show loading ... when making API request
+    pub blocking: usize, // Show block when making API request, 0 for unblock, 1 -> Searching. 2 -> Searching..
+    pub blocking_char: String,
     api_key: String,
     pub no_results: bool,
     pub queries: Vec<String>, // Hold success queries (exclude no results or errored out query)
@@ -102,7 +103,8 @@ impl App {
 
         let mut app = Self {
             running: true,
-            blocking: false,
+            blocking: 0,
+            blocking_char: String::from("."),
             api_key,
 
             queries: vec![],
@@ -193,7 +195,7 @@ impl App {
                                 if total == 0 {
                                     self.no_results = true;
                                     // Make sure to release lock before return
-                                    self.blocking = false;
+                                    self.blocking = 0;
                                 } else {
                                     let mut x_axis: f64 = 0.0;
                                     let mut x_axis_str: Vec<String> = vec![];
@@ -406,7 +408,7 @@ impl App {
                 };
 
                 // Release lock
-                self.blocking = false;
+                self.blocking = 0;
             }
             Err(_) => {}
         }
@@ -432,7 +434,7 @@ impl App {
             self.api_error = format!("{}", "Invalid search query");
         } else {
             // Lock application, delay terminal events
-            self.blocking = true;
+            self.blocking = 1;
             let api_key = self.api_key.to_owned();
 
             // Make API request in the background

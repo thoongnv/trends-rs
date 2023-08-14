@@ -88,7 +88,7 @@ fn main() -> AppResult<()> {
             }
             Event::Key(event) => {
                 // Skip process events on waiting for API response
-                if !app.blocking {
+                if app.blocking == 0 {
                     handle_events(CrosstermEvent::Key(event), &mut app, &mut state)?
                 }
             }

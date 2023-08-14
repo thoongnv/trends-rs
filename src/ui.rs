@@ -207,8 +207,14 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
     }
 
     // API request in the background
-    if app.blocking {
-        let loading = Paragraph::new(format!("Searching...\n"))
+    if app.blocking > 0 {
+        let mut dots = vec![app.blocking_char.to_owned(); app.blocking];
+        while dots.len() <= 3 {
+            // Pad some spaces so Alignment::Center block layout not moving
+            dots.push(String::from(" "));
+        }
+
+        let loading = Paragraph::new(format!("Searching{}\n", dots.join("")))
             .block(Block::default().borders(Borders::ALL).border_style(
                 match app.line_chart.focused() {
                     true => focused_style,
@@ -217,6 +223,12 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
             ))
             .alignment(Alignment::Center);
         frame.render_widget(loading, layouts[1]);
+
+        app.blocking += 1;
+        // Only show 3 dots
+        if app.blocking > 3 {
+            app.blocking = 1;
+        }
     } else if app.queries.is_empty() {
         // First query errored out or has no results
         if !app.api_error.is_empty() {
