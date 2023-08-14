@@ -92,13 +92,13 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
     // Default keys
     let default_keys = vec![
         format!("Switch panels [{}]", KeySymbols::TAB.to_string()),
-        format!("Unfocused [{}]", KeySymbols::ESC.to_string()),
         format!("Exit [{}C]", KeySymbols::CONTROL.to_string()),
     ];
     // Get focused widget keys
     for (_, widget) in app.get_widgets().into_iter().enumerate() {
         if widget.focused() {
             help_keys = widget.help_keys().to_owned();
+            help_keys.push(format!("Unfocused [{}]", KeySymbols::ESC.to_string()));
             break;
         }
     }
@@ -273,8 +273,7 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
 
             let welcome = Paragraph::new(
                 "Make search by `Enter` a query in search box.\n\
-                        Press `Esc`/ double `Esc` or `Ctrl-C` to stop running\n\
-                        Switch between panels by `Tab`",
+                        Press `Ctrl-C` to stop running, switch between panels by `Tab`",
             )
             .alignment(Alignment::Center);
             frame.render_widget(welcome, center_layout[1]);

@@ -8,20 +8,20 @@ pub fn handle_events(event: Event, app: &mut App, state: &mut AppState) -> AppRe
 
     // On unfocused any panels
     if state.unfocused {
-        match event {
-            Event::Key(key_event) => {
-                match key_event.code {
-                    // Exit application on `ESC`
-                    KeyCode::Esc => {
-                        app.quit();
-                    }
-                    // Unhandled key events
-                    _ => {}
-                }
-            }
-            // Unhandled events
-            _ => {}
-        }
+        // match event {
+        //     Event::Key(key_event) => {
+        //         match key_event.code {
+        //             // Exit application on `ESC`
+        //             KeyCode::Esc => {
+        //                 app.quit();
+        //             }
+        //             // Unhandled key events
+        //             _ => {}
+        //         }
+        //     }
+        //     // Unhandled events
+        //     _ => {}
+        // }
     } else {
         // Let each widget handle events
         let widget_index = app.widget_index;
