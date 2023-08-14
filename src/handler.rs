@@ -27,7 +27,8 @@ pub fn handle_events(event: Event, app: &mut App, state: &mut AppState) -> AppRe
         let widget_index = app.widget_index;
         let mut widgets = app.get_widgets();
 
-        if !widgets[widget_index].hidden() {
+        // Only focused & visible widget can handle events
+        if widgets[widget_index].focused() && !widgets[widget_index].hidden() {
             widgets[widget_index].handle_events(event.clone(), state);
 
             // Currently, only handle Enter key event if focused searchbox
