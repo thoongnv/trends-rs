@@ -1,5 +1,6 @@
 use std::sync::mpsc;
 use std::thread;
+use std::time::Duration;
 use std::{collections::HashMap, vec};
 
 use crate::components::Component;
@@ -19,6 +20,8 @@ use url::form_urlencoded;
 pub type AppResult<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 const API_ENDPOINT: &str = "https://trends.shodan.io";
+const API_TIMEOUT: u64 = 90; // in seconds
+
 // Trends API data already in right format so we just need a bit mapping, otherwise use create chrono for datetime parsing
 const MONTH_ABBR: [&str; 12] = [
     "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
@@ -401,9 +404,14 @@ impl App {
                         // API return defined error response
                         self.api_error = format!("{}", error["error"].as_str().unwrap());
                     }
-                    Err(_) => {
+                    Err(err) => {
                         // Some kind of io/transport error
-                        self.api_error = format!("{}", "Search failed, please try again later.");
+                        if err.to_string().contains("timed out") {
+                            self.api_error = format!("{}", "Timed out, please try again later.");
+                        } else {
+                            self.api_error =
+                                format!("{}", "Search failed, please try again later.");
+                        }
                     }
                 };
 
@@ -444,6 +452,7 @@ impl App {
                         .query("query", &query)
                         .query("facets", &facets)
                         .query("key", &api_key)
+                        .timeout(Duration::from_secs(API_TIMEOUT))
                         .call();
                 // Let self.tick (unblocking function) process API response
                 sender.send(resp).unwrap();
