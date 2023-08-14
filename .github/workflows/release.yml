@@ -120,8 +120,8 @@ jobs:
       shell: bash
       # Only publish if tag is newer than current crate version
       run: |
-        latest_version=$(cargo search strend | cut -d "#" -f 1 | cut -d "=" -f 2 | sed -e 's/^[[:space:]]*//')
-        if [ $latest_version = "${{ github.ref_name }}" ]; then
+        latest_version=$(cargo search strend | cut -d "#" -f 1 | cut -d "=" -f 2 | sed -e 's/^[[:space:]]*//' | xargs)
+        if [ "$latest_version" != "${{ github.ref_name }}" ]; then
           cargo publish
         fi
       env:
