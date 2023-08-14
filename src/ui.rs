@@ -2,6 +2,7 @@ use std::cmp;
 use std::collections::HashMap;
 use std::vec;
 
+use crate::components::KeySymbols;
 use crate::widgets::list::{List as MultiList, ListItem as MultiListItem};
 use human_repr::HumanCount;
 use ratatui::prelude::*;
@@ -81,15 +82,31 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
             [
                 Constraint::Length(4),
                 Constraint::Min(0),
-                // Constraint::Length(1),
+                Constraint::Length(1),
             ]
             .as_ref(),
         )
         .split(frame.size());
 
-    // let help_commands =
-    //     Paragraph::new("Some help commands!").block(Block::default().borders(Borders::NONE));
-    // frame.render_widget(help_commands, layouts[2]);
+    let mut help_keys = vec![];
+    // Default keys
+    let default_keys = vec![
+        format!("Switch panels [{}]", KeySymbols::TAB.to_string()),
+        format!("Unfocused [{}]", KeySymbols::ESC.to_string()),
+        format!("Exit [{}C]", KeySymbols::CONTROL.to_string()),
+    ];
+    // Get focused widget keys
+    for (_, widget) in app.get_widgets().into_iter().enumerate() {
+        if widget.focused() {
+            help_keys = widget.help_keys().to_owned();
+            break;
+        }
+    }
+    help_keys.append(&mut default_keys.to_owned());
+
+    let help_commands =
+        Paragraph::new(help_keys.join("  ")).block(Block::default().borders(Borders::NONE));
+    frame.render_widget(help_commands, layouts[2]);
 
     // Some reuse widgets
     let error_block = Block::default()

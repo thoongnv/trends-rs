@@ -1,6 +1,6 @@
 use crate::{
     app::{AppState, FacetIndex},
-    components::Component,
+    components::{Component, KeySymbols},
     widgets::list::MultiListState,
 };
 
@@ -197,5 +197,21 @@ impl<T> Component for MultiStatefulList<T> {
 
     fn set_focus(&mut self, focus: bool) {
         self.focused = focus;
+    }
+
+    fn help_keys(&self) -> Vec<String> {
+        vec![
+            format!(
+                "Up/ Down [{}{}]",
+                KeySymbols::UP.to_string(),
+                KeySymbols::DOWN.to_string()
+            ),
+            format!("Toggle [{}]", KeySymbols::ENTER.to_string()),
+            format!(
+                "Select/ Unselect All [{}{}]",
+                KeySymbols::RIGHT.to_string(),
+                KeySymbols::LEFT.to_string()
+            ),
+        ]
     }
 }

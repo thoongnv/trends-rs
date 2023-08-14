@@ -1,4 +1,7 @@
-use crate::{app::AppState, components::Component};
+use crate::{
+    app::AppState,
+    components::{Component, KeySymbols},
+};
 
 use crossterm::event::{Event, KeyCode};
 
@@ -125,5 +128,17 @@ impl Component for UserInput {
 
     fn allow_enter(&self) -> bool {
         true
+    }
+
+    fn help_keys(&self) -> Vec<String> {
+        vec![
+            format!("Search [{}]", KeySymbols::ENTER.to_string()),
+            format!(
+                "Move cursor [{}{}]",
+                KeySymbols::LEFT.to_string(),
+                KeySymbols::RIGHT.to_string()
+            ),
+            format!("Delete Char [{}]", KeySymbols::BACKSPACE.to_string()),
+        ]
     }
 }
