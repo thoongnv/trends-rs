@@ -1,4 +1,5 @@
 use crossterm::event::Event;
+use uuid::Uuid;
 
 use crate::app::AppState;
 
@@ -54,6 +55,9 @@ impl KeySymbols {
 }
 
 pub trait Component {
+    // Unique Id use to compare struct
+    fn id(&self) -> Uuid;
+
     fn handle_events(&mut self, event: Event, state: &mut AppState) {}
 
     fn focused(&self) -> bool;

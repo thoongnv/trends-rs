@@ -3,6 +3,7 @@ use crate::{
     components::{Component, KeySymbols},
     widgets::list::MultiListState,
 };
+use uuid::Uuid;
 
 use crossterm::event::{Event, KeyCode};
 // use ratatui::widgets::ListState;
@@ -90,6 +91,7 @@ use crossterm::event::{Event, KeyCode};
 // Custom stateful list support multi select items
 #[derive(Debug)]
 pub struct MultiStatefulList<T> {
+    id: Uuid,
     pub state: MultiListState,
     pub state_key: Option<String>,
     pub items: Vec<T>,
@@ -100,6 +102,7 @@ pub struct MultiStatefulList<T> {
 impl<T> MultiStatefulList<T> {
     pub fn new() -> MultiStatefulList<T> {
         MultiStatefulList {
+            id: Uuid::new_v4(),
             state: MultiListState::default(),
             state_key: None, // Saved selected indexes with the key if exists
             items: vec![],
@@ -154,6 +157,10 @@ impl<T> MultiStatefulList<T> {
 }
 
 impl<T> Component for MultiStatefulList<T> {
+    fn id(&self) -> Uuid {
+        self.id
+    }
+
     fn handle_events(&mut self, event: Event, state: &mut AppState) {
         if !self.items.is_empty() {
             match event {

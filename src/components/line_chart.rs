@@ -1,9 +1,11 @@
 use crate::{app::AppState, components::Component};
+use uuid::Uuid;
 
 use crossterm::event::{Event, KeyCode};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct LineChart {
+    id: Uuid,
     focused: bool,
     hidden: bool,
 }
@@ -11,6 +13,7 @@ pub struct LineChart {
 impl LineChart {
     pub fn new() -> Self {
         Self {
+            id: Uuid::new_v4(),
             focused: false,
             hidden: false,
         }
@@ -18,6 +21,10 @@ impl LineChart {
 }
 
 impl Component for LineChart {
+    fn id(&self) -> Uuid {
+        self.id
+    }
+
     fn handle_events(&mut self, event: Event, state: &mut AppState) {
         match event {
             Event::Key(key_event) => match key_event.code {

@@ -2,12 +2,14 @@ use crate::{
     app::AppState,
     components::{Component, KeySymbols},
 };
+use uuid::Uuid;
 
 use crossterm::event::{Event, KeyCode};
 
 // https://github.com/ratatui-org/ratatui/blob/v0.22.0/examples/user_input.rs
 #[derive(Debug)]
 pub struct UserInput {
+    id: Uuid,
     /// Current value of the input box
     input: String,
     /// Position of cursor in the editor area.
@@ -24,6 +26,7 @@ impl UserInput {
     pub fn new(input: String) -> Self {
         let cursor_position = input.len();
         Self {
+            id: Uuid::new_v4(),
             input,
             cursor_position,
             messages: Vec::new(),
@@ -96,6 +99,10 @@ impl UserInput {
 }
 
 impl Component for UserInput {
+    fn id(&self) -> Uuid {
+        self.id
+    }
+
     fn handle_events(&mut self, event: Event, state: &mut AppState) {
         match event {
             Event::Key(key_event) => match key_event.code {
