@@ -170,16 +170,25 @@ impl App {
 
     pub fn switch_widgets(&mut self, state: &mut AppState, reverse: bool) -> AppResult<()> {
         let widgets_len = self.get_widgets().len();
-        let new_widget: usize = if reverse {
-            self.widget_index
-                .wrapping_sub(1)
-                .min(widgets_len.saturating_sub(1))
-        } else {
-            self.widget_index.saturating_add(1) % widgets_len
-        };
+        let mut success = false;
 
-        self.select_widget(new_widget);
-        state.unfocused = false;
+        while !success {
+            let new_widget: usize = if reverse {
+                self.widget_index
+                    .wrapping_sub(1)
+                    .min(widgets_len.saturating_sub(1))
+            } else {
+                self.widget_index.saturating_add(1) % widgets_len
+            };
+
+            self.select_widget(new_widget);
+            state.unfocused = false;
+
+            // Switch to next until find visible widget
+            if !self.get_widgets()[new_widget].hidden() {
+                success = true;
+            }
+        }
 
         Ok(())
     }
