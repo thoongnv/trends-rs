@@ -5,6 +5,7 @@ use std::{collections::HashMap, vec};
 
 use crate::components::Component;
 use serde_json::json;
+use uuid::Uuid;
 
 use crate::components::line_chart::LineChart;
 use crate::components::stateful_list::MultiStatefulList;
@@ -80,7 +81,7 @@ pub struct FacetIndex {
 // src/handler.rs: widgets[widget_index].handle_events(event.clone(), state);
 #[derive(Debug)]
 pub struct AppState {
-    pub unfocused: bool,
+    pub unfocused: bool, // If there is no focused panel
     pub submitted: bool,
     pub first_render: bool,
     pub facet_indexes: HashMap<String, FacetIndex>, // Saved <query.facet_values, selected_indexes>
@@ -145,6 +146,14 @@ impl App {
             &mut self.facet_values,
             &mut self.line_chart,
         ]
+    }
+
+    pub fn get_widget_index(&mut self, widget_id: Uuid) -> usize {
+        let widget_index = self
+            .get_widgets()
+            .iter()
+            .position(|widget| widget.id() == widget_id);
+        widget_index.unwrap_or(0)
     }
 
     pub fn select_widget(&mut self, widget_index: usize) {

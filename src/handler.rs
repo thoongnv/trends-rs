@@ -1,4 +1,7 @@
-use crate::app::{App, AppResult, AppState};
+use crate::{
+    app::{App, AppResult, AppState},
+    components::Component,
+};
 use crossterm::event::{Event, KeyCode, KeyModifiers};
 
 /// Handles the key events and updates the state of [`App`].
@@ -35,6 +38,19 @@ pub fn handle_events(event: Event, app: &mut App, state: &mut AppState) -> AppRe
             if widgets[widget_index].allow_enter() {
                 match event {
                     Event::Key(key_event) => match key_event.code {
+                        // Special case to switch between searchbox lines
+                        KeyCode::Up => {
+                            if !app.search_input.focused() {
+                                let index = app.get_widget_index(app.search_input.id());
+                                app.select_widget(index);
+                            }
+                        }
+                        KeyCode::Down => {
+                            if !app.facets_input.focused() {
+                                let index = app.get_widget_index(app.facets_input.id());
+                                app.select_widget(index);
+                            }
+                        }
                         KeyCode::Enter => {
                             state.submitted = true;
                             app.search(state.sender.clone())?;

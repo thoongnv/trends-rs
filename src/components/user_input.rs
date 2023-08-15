@@ -118,6 +118,7 @@ impl Component for UserInput {
                 KeyCode::Right => {
                     self.move_cursor_right();
                 }
+                // TODO Handle more key events: Tab to insert space, Ctrl+W to delete previous word?
                 KeyCode::Esc => {
                     state.unfocused = true;
                     self.focused = false;
@@ -149,6 +150,7 @@ impl Component for UserInput {
     }
 
     fn help_keys(&self) -> Vec<String> {
+        // TODO Find a better way to map key events in fn handle_events to this?
         vec![
             format!("Search [{}]", KeySymbols::ENTER.to_string()),
             format!(
@@ -157,6 +159,11 @@ impl Component for UserInput {
                 KeySymbols::RIGHT.to_string()
             ),
             format!("Delete Char [{}]", KeySymbols::BACKSPACE.to_string()),
+            format!(
+                "Up/ Down [{}{}]",
+                KeySymbols::UP.to_string(),
+                KeySymbols::DOWN.to_string()
+            ),
         ]
     }
 }
