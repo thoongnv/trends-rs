@@ -1,11 +1,12 @@
 use crate::{app::AppState, components::Component};
 use uuid::Uuid;
 
-use crossterm::event::{Event, KeyCode};
+use crossterm::event::Event;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub struct LineChart {
     id: Uuid,
+    pub data: Vec<Vec<String>>,
     focused: bool,
     hidden: bool,
 }
@@ -14,6 +15,7 @@ impl LineChart {
     pub fn new() -> Self {
         Self {
             id: Uuid::new_v4(),
+            data: vec![],
             focused: false,
             hidden: false,
         }

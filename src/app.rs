@@ -42,8 +42,9 @@ pub struct Chart {
     pub datasets: Vec<Points>,
     pub x_bounds: Vec<f64>,
     pub y_bounds: Vec<f64>,
+    pub x_ticks: Vec<String>,
+    pub y_ticks: Vec<String>,
     pub x_labels: Vec<String>,
-    pub y_labels: Vec<String>,
     pub facets: Option<Box<Chart>>,
 }
 
@@ -85,6 +86,7 @@ pub struct AppState {
     pub submitted: bool,
     pub first_render: bool,
     pub facet_indexes: HashMap<String, FacetIndex>, // Saved <query.facet_values, selected_indexes>
+    pub app_log: String,                            // Application log show at the bottom
     pub sender: mpsc::Sender<Result<ureq::Response, ureq::Error>>,
 }
 
@@ -225,7 +227,7 @@ impl App {
                                     self.blocking = 0;
                                 } else {
                                     let mut x_axis: f64 = 0.0;
-                                    let mut x_axis_str: Vec<String> = vec![];
+                                    let mut x_axis_labels: Vec<String> = vec![];
                                     let mut max_y_axis = 0.0;
                                     let mut data: Vec<(f64, f64)> = vec![];
 
@@ -240,7 +242,7 @@ impl App {
 
                                         let month_str = item["month"].as_str().unwrap();
                                         let parts: Vec<&str> = month_str.split("-").collect();
-                                        x_axis_str.push(format!(
+                                        x_axis_labels.push(format!(
                                             "{} {}",
                                             MONTH_ABBR[parts[1].parse::<usize>().unwrap() - 1], // Index start from 0
                                             parts[0]
@@ -254,14 +256,14 @@ impl App {
 
                                     // Just use three labels as current line chart looks weird on too many ticks
                                     // https://github.com/ratatui-org/ratatui/issues/334#issuecomment-1641459034
-                                    let x_axis_len = x_axis_str.len();
-                                    let x_labels = vec![
-                                        x_axis_str[0].to_owned(),
-                                        x_axis_str[x_axis_len / 2].to_owned(),
-                                        x_axis_str[x_axis_len - 1].to_owned(),
+                                    let x_axis_len = x_axis_labels.len();
+                                    let x_ticks = vec![
+                                        x_axis_labels[0].to_owned(),
+                                        x_axis_labels[x_axis_len / 2].to_owned(),
+                                        x_axis_labels[x_axis_len - 1].to_owned(),
                                     ];
                                     // Convert float to human-readable format
-                                    let y_labels = vec![
+                                    let y_ticks = vec![
                                         String::from("0"),
                                         ((max_y_axis / 2.0) as i64).human_count_bare().to_string(),
                                         (max_y_axis as i64).human_count_bare().to_string(),
@@ -280,7 +282,7 @@ impl App {
                                                 .unwrap();
 
                                             let mut x_axis: f64 = 0.0;
-                                            let mut x_axis_str: Vec<String> = vec![];
+                                            let mut x_axis_labels: Vec<String> = vec![];
                                             let mut facet_values: HashMap<String, i64> =
                                                 HashMap::new();
                                             let mut month_value_maps: Vec<HashMap<String, f64>> =
@@ -323,7 +325,7 @@ impl App {
                                                 let month_str = item["key"].as_str().unwrap();
                                                 let parts: Vec<&str> =
                                                     month_str.split("-").collect();
-                                                x_axis_str.push(format!(
+                                                x_axis_labels.push(format!(
                                                     "{} {}",
                                                     MONTH_ABBR
                                                         [parts[1].parse::<usize>().unwrap() - 1], // Index start from 0
@@ -355,13 +357,13 @@ impl App {
                                             let y_bounds = vec![0.0, max_y_axis];
 
                                             // Just use three labels as current line chart looks weird on too many ticks
-                                            let x_axis_len = x_axis_str.len();
-                                            let x_labels = vec![
-                                                x_axis_str[0].to_owned(),
-                                                x_axis_str[x_axis_len / 2].to_owned(),
-                                                x_axis_str[x_axis_len - 1].to_owned(),
+                                            let x_axis_len = x_axis_labels.len();
+                                            let x_ticks = vec![
+                                                x_axis_labels[0].to_owned(),
+                                                x_axis_labels[x_axis_len / 2].to_owned(),
+                                                x_axis_labels[x_axis_len - 1].to_owned(),
                                             ];
-                                            let y_labels = vec![
+                                            let y_ticks = vec![
                                                 String::from("0"),
                                                 ((max_y_axis / 2.0) as i64)
                                                     .human_count_bare()
@@ -376,8 +378,9 @@ impl App {
                                                 datasets,
                                                 x_bounds,
                                                 y_bounds,
-                                                x_labels,
-                                                y_labels,
+                                                x_ticks,
+                                                y_ticks,
+                                                x_labels: x_axis_labels,
                                                 ..Default::default()
                                             }))
                                         }
@@ -395,8 +398,9 @@ impl App {
                                             }],
                                             x_bounds,
                                             y_bounds,
-                                            x_labels,
-                                            y_labels,
+                                            x_ticks,
+                                            y_ticks,
+                                            x_labels: x_axis_labels,
                                             facets: facets_data,
                                             ..Default::default()
                                         },

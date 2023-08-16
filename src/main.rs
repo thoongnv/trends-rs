@@ -65,6 +65,7 @@ fn main() -> AppResult<()> {
         submitted: false,
         first_render: true,
         facet_indexes: HashMap::new(),
+        app_log: String::new(),
         sender,
     };
 

@@ -55,6 +55,7 @@ pub fn init_api_key(mut key: String) -> Result<(), std::io::Error> {
                     .open(fpath)?;
             }
 
+            // Skip setting file permission on Windows
             #[cfg(not(unix))]
             {
                 file = OpenOptions::new().create(true).write(true).open(fpath)?;

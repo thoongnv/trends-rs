@@ -82,18 +82,25 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
             [
                 Constraint::Length(4),
                 Constraint::Min(0),
-                Constraint::Length(1),
+                Constraint::Length(2),
             ]
             .as_ref(),
         )
         .split(frame.size());
 
     let mut help_keys = vec![];
-    // Default keys
-    let default_keys = vec![
+    let mut default_keys = vec![
         format!("Switch panels [{}]", KeySymbols::TAB.to_string()),
         format!("Exit [{}C]", KeySymbols::CONTROL.to_string()),
     ];
+
+    if !app.search_input.focused() && !app.facets_input.focused() {
+        default_keys.insert(
+            default_keys.len() - 1,
+            format!("Export [{}E]", KeySymbols::CONTROL.to_string()),
+        );
+    }
+
     // Get focused widget keys
     for (_, widget) in app.get_widgets().into_iter().enumerate() {
         if widget.focused() && !widget.hidden() {
@@ -102,11 +109,33 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
             break;
         }
     }
-    help_keys.append(&mut default_keys.to_owned());
 
-    let help_commands =
-        Paragraph::new(help_keys.join("  ")).block(Block::default().borders(Borders::NONE));
-    frame.render_widget(help_commands, layouts[2]);
+    // Append default keys
+    help_keys.append(&mut default_keys.to_owned());
+    let footer_padding = Padding {
+        left: 0,
+        right: 0,
+        top: 1,
+        bottom: 0,
+    };
+    let help_commands = Paragraph::new(help_keys.join("  "))
+        .block(Block::default().padding(footer_padding.clone()));
+
+    // Show application log if any, e.g. Export chart to ./data.csv
+    if !state.app_log.is_empty() {
+        let footer_layout = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Percentage(80), Constraint::Percentage(20)].as_ref())
+            .split(layouts[2]);
+        frame.render_widget(help_commands, footer_layout[0]);
+
+        let footer_msg = Paragraph::new(format!("{}", state.app_log))
+            .block(Block::default().padding(footer_padding))
+            .alignment(Alignment::Right);
+        frame.render_widget(footer_msg, footer_layout[1]);
+    } else {
+        frame.render_widget(help_commands, layouts[2]);
+    }
 
     // Some reuse widgets
     let error_block = Block::default()
@@ -389,14 +418,24 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
 
         // Default draw total chart if unfocused facet values block
         if !app.facet_values.focused() {
+            // Construct export data in CSV format which easy load to Excel for generate charts
+            // Month    | query=nginx&facets=asn%3A10 | query=apache&facets=org
+            // Jun 2017 | 19799459,27382961           |
+            // Jul 2017 | 21077099,29138371           |
+            // ...
+            // Jul 2023 | 37054878,20837852           |
+            let mut chart_data: Vec<Vec<String>> = vec![vec!["Month".to_string()]];
             let mut datasets = vec![];
 
             // Just get one X Axis as it's same for all charts
             let mut x_bounds = vec![];
-            let mut x_labels = vec![];
+            let mut x_ticks = vec![];
             if let Some(entry) = app.charts.last_entry() {
                 x_bounds = entry.get().x_bounds.clone();
-                x_labels = entry.get().x_labels.clone();
+                x_ticks = entry.get().x_ticks.clone();
+                for month in &entry.get().x_labels {
+                    chart_data.push(vec![month.to_owned()]);
+                }
             }
 
             // Have to rebuild Y Axis data from selected charts
@@ -419,6 +458,12 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
                         if chart_y_axis > max_y_axis {
                             max_y_axis = chart_y_axis;
                         }
+
+                        // Build chart data
+                        chart_data[0].push(query.to_string());
+                        for (i, point) in chart.datasets[0].data.iter().enumerate() {
+                            chart_data[i + 1].push(point.1.to_string());
+                        }
                     }
                     None => {}
                 }
@@ -426,7 +471,7 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
 
             let y_bounds = vec![0.0, max_y_axis];
             // Convert float to human-readable format
-            let y_labels = vec![
+            let y_ticks = vec![
                 String::from("0"),
                 ((max_y_axis / 2.0) as i64).human_count_bare().to_string(),
                 (max_y_axis as i64).human_count_bare().to_string(),
@@ -446,7 +491,7 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
                                 false => Style::default().fg(Color::Gray),
                             })
                             .bounds([x_bounds[0], x_bounds[x_bounds.len() - 1]])
-                            .labels(x_labels.iter().cloned().map(Span::from).collect()),
+                            .labels(x_ticks.iter().cloned().map(Span::from).collect()),
                     )
                     .y_axis(
                         Axis::default()
@@ -457,11 +502,16 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
                                 false => Style::default().fg(Color::Gray),
                             })
                             .bounds([y_bounds[0], y_bounds[y_bounds.len() - 1]])
-                            .labels(y_labels.iter().cloned().map(Span::from).collect())
+                            .labels(y_ticks.iter().cloned().map(Span::from).collect())
                             .labels_alignment(Alignment::Center),
                     );
 
                 frame.render_widget(query_chart, main_layouts[1]);
+            }
+
+            if app.line_chart.data != chart_data {
+                // Save current chart data for exporting purpose
+                app.line_chart.data = chart_data;
             }
         }
 
@@ -545,12 +595,20 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
                         // Load facets chart
                         if app.facet_values.focused() {
                             let selected_facets = app.facet_values.state.selected_indexes();
-                            let datasets = chart
+                            let mut chart_data: Vec<Vec<String>> = vec![vec!["Month".to_string()]];
+                            let mut datasets = vec![];
+
+                            for month in &chart.x_labels {
+                                chart_data.push(vec![month.to_owned()]);
+                            }
+
+                            for (_, point) in chart
                                 .datasets
                                 .iter()
                                 .enumerate()
                                 .filter(|(index, _)| selected_facets.contains(index))
-                                .map(|(_, point)| {
+                            {
+                                datasets.push(
                                     Dataset::default()
                                         // Disable chart legend as we already show color in facet values block,
                                         // current legend won't display if facet line too long.
@@ -561,9 +619,20 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
                                             Style::default()
                                                 .fg(facet_colors[&point.label.to_owned()]),
                                         )
-                                        .data(&point.data)
-                                })
-                                .collect();
+                                        .data(&point.data),
+                                );
+
+                                // Build saved data
+                                chart_data[0].push(point.label.to_owned());
+                                for (i, point) in point.data.iter().enumerate() {
+                                    chart_data[i + 1].push(point.1.to_string());
+                                }
+                            }
+
+                            // Don't want to override if data is the same
+                            if app.line_chart.data != chart_data {
+                                app.line_chart.data = chart_data;
+                            }
 
                             let facet_chart = Chart::new(datasets)
                                 .block(
@@ -582,12 +651,7 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
                                             chart.x_bounds[chart.x_bounds.len() - 1],
                                         ])
                                         .labels(
-                                            chart
-                                                .x_labels
-                                                .iter()
-                                                .cloned()
-                                                .map(Span::from)
-                                                .collect(),
+                                            chart.x_ticks.iter().cloned().map(Span::from).collect(),
                                         ),
                                 )
                                 .y_axis(
@@ -601,12 +665,7 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
                                             chart.y_bounds[chart.y_bounds.len() - 1],
                                         ])
                                         .labels(
-                                            chart
-                                                .y_labels
-                                                .iter()
-                                                .cloned()
-                                                .map(Span::from)
-                                                .collect(),
+                                            chart.y_ticks.iter().cloned().map(Span::from).collect(),
                                         )
                                         .labels_alignment(Alignment::Center),
                                 );

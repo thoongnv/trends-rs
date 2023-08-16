@@ -1,3 +1,5 @@
+use std::{fs::File, io::Write, path::Path};
+
 use crate::{
     app::{App, AppResult, AppState},
     components::Component,
@@ -82,6 +84,36 @@ pub fn handle_events(event: Event, app: &mut App, state: &mut AppState) -> AppRe
             }
             KeyCode::BackTab => {
                 app.switch_widgets(state, true)?;
+            }
+            // Export selected chart data to CSV file
+            KeyCode::Char('e') | KeyCode::Char('E') => {
+                if key_event.modifiers == KeyModifiers::CONTROL {
+                    if app.line_chart.data.is_empty() || app.line_chart.data[0].len() == 1 {
+                        state.app_log = "No chart data to export".to_string();
+                    } else {
+                        let mut has_error = false;
+                        let outfile = "./data.csv";
+
+                        match File::create(outfile) {
+                            Ok(mut file) => {
+                                state.app_log = format!("Exported chart to {}", outfile);
+                                for row in &app.line_chart.data {
+                                    let line = row.join(",") + "\n";
+                                    if let Err(_) = file.write_all(line.as_bytes()) {
+                                        has_error = true;
+                                    }
+                                }
+                            }
+                            Err(_) => {
+                                has_error = true;
+                            }
+                        };
+
+                        if has_error {
+                            state.app_log = "Failed to export chart data".to_string();
+                        }
+                    }
+                }
             }
             // Exit application on `Ctrl-C`
             KeyCode::Char('c') | KeyCode::Char('C') => {
