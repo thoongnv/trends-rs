@@ -34,11 +34,23 @@ pub fn handle_events(event: Event, app: &mut App, state: &mut AppState) -> AppRe
         if widgets[widget_index].focused() && !widgets[widget_index].hidden() {
             widgets[widget_index].handle_events(event.clone(), state);
 
-            // Currently, only handle Enter key event if focused searchbox
+            // Unfocus current widget
+            match event {
+                Event::Key(key_event) => match key_event.code {
+                    KeyCode::Esc => {
+                        state.unfocused = true;
+                        widgets[widget_index].set_focus(false);
+                    }
+                    _x => {}
+                },
+                _ => {}
+            }
+
+            // Special handler for focused searchbox
             if widgets[widget_index].allow_enter() {
                 match event {
                     Event::Key(key_event) => match key_event.code {
-                        // Special case to switch between searchbox lines
+                        // Switch between searchbox lines
                         KeyCode::Up => {
                             if !app.search_input.focused() {
                                 let index = app.get_widget_index(app.search_input.id());

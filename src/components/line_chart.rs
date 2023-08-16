@@ -25,19 +25,7 @@ impl Component for LineChart {
         self.id
     }
 
-    fn handle_events(&mut self, event: Event, state: &mut AppState) {
-        match event {
-            Event::Key(key_event) => match key_event.code {
-                KeyCode::Esc => {
-                    // Unfocus the widget and allow to exist app
-                    state.unfocused = true;
-                    self.focused = false;
-                }
-                _ => {}
-            },
-            _ => {}
-        }
-    }
+    fn handle_events(&mut self, event: Event, state: &mut AppState) {}
 
     fn focused(&self) -> bool {
         self.focused

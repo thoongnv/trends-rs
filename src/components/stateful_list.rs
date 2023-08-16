@@ -180,10 +180,6 @@ impl<T> Component for MultiStatefulList<T> {
                     KeyCode::Down => self.next(),
                     KeyCode::Up => self.previous(),
                     KeyCode::Enter => self.toggle(),
-                    KeyCode::Esc => {
-                        state.unfocused = true;
-                        self.focused = false;
-                    }
                     _ => {}
                 },
                 _ => {}

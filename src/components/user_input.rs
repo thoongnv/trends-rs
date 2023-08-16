@@ -119,10 +119,6 @@ impl Component for UserInput {
                     self.move_cursor_right();
                 }
                 // TODO Handle more key events: Tab to insert space, Ctrl+W to delete previous word?
-                KeyCode::Esc => {
-                    state.unfocused = true;
-                    self.focused = false;
-                }
                 _ => {}
             },
             _ => {}
