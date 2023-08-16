@@ -71,6 +71,12 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
         app.queries.remove(0);
     }
 
+    // Only display application log in few seconds
+    if app.ticks > 40 {
+        state.app_log = String::new();
+        app.ticks = 0;
+    }
+
     // Run search if first launch with --query --facets, skip if has error
     if state.first_render && !app.search_input.get_input().is_empty() {
         // Use _ to ignore Err() if current function don't have return type

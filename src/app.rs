@@ -53,6 +53,9 @@ pub struct App {
     pub running: bool,
     pub blocking: usize, // Show block when making API request, 0 for unblock, 1 -> Searching. 2 -> Searching..
     pub blocking_char: String,
+    pub tick_rate: u64,
+    pub ticks: usize, // Used to clear some data after number of ticks
+
     api_key: String,
     pub no_results: bool,
     pub queries: Vec<String>, // Hold success queries (exclude no results or errored out query)
@@ -111,8 +114,10 @@ impl App {
             running: true,
             blocking: 0,
             blocking_char: String::from("."),
-            api_key,
+            tick_rate: 250,
+            ticks: 0,
 
+            api_key,
             queries: vec![],
             last_query: String::new(),
             prev_query: String::new(),
@@ -197,6 +202,8 @@ impl App {
 
     /// Handles the tick event of the terminal.
     pub fn tick(&mut self) -> AppResult<()> {
+        self.ticks += 1;
+
         // TODO Should we move the process out of tick event, maybe custom update event?
         match self.receiver.try_recv() {
             Ok(resp) => {
