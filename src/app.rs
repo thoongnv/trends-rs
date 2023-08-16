@@ -284,7 +284,7 @@ impl App {
                                             let mut facet_values: HashMap<String, i64> =
                                                 HashMap::new();
                                             let mut month_value_maps: Vec<HashMap<String, f64>> =
-                                                vec![HashMap::new()];
+                                                vec![];
                                             let mut max_y_axis = 0.0;
                                             let mut datasets = vec![];
 
