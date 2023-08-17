@@ -102,10 +102,7 @@ impl App {
         let api_key = match util::get_api_key() {
             Ok(key) => key,
             Err(_) => {
-                println!(
-                    "Error: {}",
-                    "Missing API key, please run \"strend init <API key>\""
-                );
+                println!("Error: Missing API key, please run \"strend init <API key>\"");
                 std::process::exit(EXIT_ERROR_CODE);
             }
         };
@@ -205,255 +202,245 @@ impl App {
         self.ticks += 1;
 
         // TODO Should we move the process out of tick event, maybe custom update event?
-        match self.receiver.try_recv() {
-            Ok(resp) => {
-                let query = self.search_input.get_input().to_owned();
-                let facets = self.facets_input.get_input().trim().to_owned();
-                let encoded_query: String = form_urlencoded::Serializer::new(String::new())
-                    .append_pair("query", &query)
-                    .append_pair("facets", &facets)
-                    .finish();
-                // Save last submitted query
-                self.last_query = encoded_query.to_owned();
+        if let Ok(resp) = self.receiver.try_recv() {
+            let query = self.search_input.get_input().to_owned();
+            let facets = self.facets_input.get_input().trim().to_owned();
+            let encoded_query: String = form_urlencoded::Serializer::new(String::new())
+                .append_pair("query", &query)
+                .append_pair("facets", &facets)
+                .finish();
+            // Save last submitted query
+            self.last_query = encoded_query.to_owned();
 
-                match resp {
-                    Ok(response) => {
-                        // As resp_json["facets"]["key"] key is dynamic based on user request,
-                        // I din't find a proper way to define JSON response mapping struct for it so parse manually
-                        let resp_str = response.into_string()?;
-                        let resp_json: Result<Value, serde_json::Error> =
-                            serde_json::from_str(&resp_str);
+            match resp {
+                Ok(response) => {
+                    // As resp_json["facets"]["key"] key is dynamic based on user request,
+                    // I din't find a proper way to define JSON response mapping struct for it so parse manually
+                    let resp_str = response.into_string()?;
+                    let resp_json: Result<Value, serde_json::Error> =
+                        serde_json::from_str(&resp_str);
 
-                        match resp_json {
-                            Ok(resp_json) => {
-                                let total = resp_json["total"].as_i64().unwrap();
-                                // No results found
-                                if total == 0 {
-                                    self.no_results = true;
-                                    // Make sure to release lock before return
-                                    self.blocking = 0;
-                                } else {
-                                    let mut x_axis: f64 = 0.0;
-                                    let mut x_axis_labels: Vec<String> = vec![];
-                                    let mut max_y_axis = 0.0;
-                                    let mut data: Vec<(f64, f64)> = vec![];
+                    match resp_json {
+                        Ok(resp_json) => {
+                            let total = resp_json["total"].as_i64().unwrap();
+                            // No results found
+                            if total == 0 {
+                                self.no_results = true;
+                                // Make sure to release lock before return
+                                self.blocking = 0;
+                            } else {
+                                let mut x_axis: f64 = 0.0;
+                                let mut x_axis_labels: Vec<String> = vec![];
+                                let mut max_y_axis = 0.0;
+                                let mut data: Vec<(f64, f64)> = vec![];
 
-                                    for item in resp_json["matches"].as_array().unwrap() {
-                                        let count = item["count"].as_i64().unwrap() as f64;
-                                        if count > max_y_axis {
-                                            max_y_axis = count;
-                                        }
-
-                                        data.push((x_axis, count));
-                                        x_axis += 1.0; // Represent each YYYY-MM as float point data
-
-                                        let month_str = item["month"].as_str().unwrap();
-                                        let parts: Vec<&str> = month_str.split("-").collect();
-                                        x_axis_labels.push(format!(
-                                            "{} {}",
-                                            MONTH_ABBR[parts[1].parse::<usize>().unwrap() - 1], // Index start from 0
-                                            parts[0]
-                                        ));
+                                for item in resp_json["matches"].as_array().unwrap() {
+                                    let count = item["count"].as_i64().unwrap() as f64;
+                                    if count > max_y_axis {
+                                        max_y_axis = count;
                                     }
 
-                                    // Other chart data
-                                    x_axis -= 1.0;
-                                    let x_bounds = vec![0.0, x_axis];
-                                    let y_bounds = vec![0.0, max_y_axis];
+                                    data.push((x_axis, count));
+                                    x_axis += 1.0; // Represent each YYYY-MM as float point data
 
-                                    // Just use three labels as current line chart looks weird on too many ticks
-                                    // https://github.com/ratatui-org/ratatui/issues/334#issuecomment-1641459034
-                                    let x_axis_len = x_axis_labels.len();
-                                    let x_ticks = vec![
-                                        x_axis_labels[0].to_owned(),
-                                        x_axis_labels[x_axis_len / 2].to_owned(),
-                                        x_axis_labels[x_axis_len - 1].to_owned(),
-                                    ];
-                                    // Convert float to human-readable format
-                                    let y_ticks = vec![
-                                        String::from("0"),
-                                        ((max_y_axis / 2.0) as i64).human_count_bare().to_string(),
-                                        (max_y_axis as i64).human_count_bare().to_string(),
-                                    ];
+                                    let month_str = item["month"].as_str().unwrap();
+                                    let parts: Vec<&str> = month_str.split('-').collect();
+                                    x_axis_labels.push(format!(
+                                        "{} {}",
+                                        MONTH_ABBR[parts[1].parse::<usize>().unwrap() - 1], // Index start from 0
+                                        parts[0]
+                                    ));
+                                }
 
-                                    // If users requested facets then generate data for build facets line chart later
-                                    let facets_data: Option<Box<Chart>> = match !facets.is_empty() {
-                                        true => {
-                                            // TODO Currently, we built chart for only first facet, also the API limit to 1 facet.
-                                            let first_facet = facets
-                                                .split(",")
-                                                .nth(0)
-                                                .unwrap()
-                                                .split(":")
-                                                .nth(0)
-                                                .unwrap();
+                                // Other chart data
+                                x_axis -= 1.0;
+                                let x_bounds = vec![0.0, x_axis];
+                                let y_bounds = vec![0.0, max_y_axis];
 
-                                            let mut x_axis: f64 = 0.0;
-                                            let mut x_axis_labels: Vec<String> = vec![];
-                                            let mut facet_values: HashMap<String, i64> =
+                                // Just use three labels as current line chart looks weird on too many ticks
+                                // https://github.com/ratatui-org/ratatui/issues/334#issuecomment-1641459034
+                                let x_axis_len = x_axis_labels.len();
+                                let x_ticks = vec![
+                                    x_axis_labels[0].to_owned(),
+                                    x_axis_labels[x_axis_len / 2].to_owned(),
+                                    x_axis_labels[x_axis_len - 1].to_owned(),
+                                ];
+                                // Convert float to human-readable format
+                                let y_ticks = vec![
+                                    String::from("0"),
+                                    ((max_y_axis / 2.0) as i64).human_count_bare().to_string(),
+                                    (max_y_axis as i64).human_count_bare().to_string(),
+                                ];
+
+                                // If users requested facets then generate data for build facets line chart later
+                                let facets_data: Option<Box<Chart>> = match !facets.is_empty() {
+                                    true => {
+                                        // TODO Currently, we built chart for only first facet, also the API limit to 1 facet.
+                                        let first_facet = facets
+                                            .split(',')
+                                            .next()
+                                            .unwrap()
+                                            .split(':')
+                                            .next()
+                                            .unwrap();
+
+                                        let mut x_axis: f64 = 0.0;
+                                        let mut x_axis_labels: Vec<String> = vec![];
+                                        let mut facet_values: HashMap<String, i64> = HashMap::new();
+                                        let mut month_value_maps: Vec<HashMap<String, f64>> =
+                                            vec![];
+                                        let mut max_y_axis = 0.0;
+                                        let mut datasets = vec![];
+
+                                        // Get mappings facet value -> count of each month
+                                        for item in
+                                            resp_json["facets"][first_facet].as_array().unwrap()
+                                        {
+                                            let mut tmp_values: HashMap<String, f64> =
                                                 HashMap::new();
-                                            let mut month_value_maps: Vec<HashMap<String, f64>> =
-                                                vec![];
-                                            let mut max_y_axis = 0.0;
-                                            let mut datasets = vec![];
 
-                                            // Get mappings facet value -> count of each month
-                                            for item in
-                                                resp_json["facets"][first_facet].as_array().unwrap()
-                                            {
-                                                let mut tmp_values: HashMap<String, f64> =
-                                                    HashMap::new();
+                                            for bucket in item["values"].as_array().unwrap() {
+                                                let value = match bucket["value"].as_str() {
+                                                    Some(value) => value.to_owned(),
+                                                    // Some facet is number, e.g. port, http.html_hash
+                                                    None => bucket["value"]
+                                                        .as_i64()
+                                                        .unwrap()
+                                                        .to_string(),
+                                                };
+                                                let count =
+                                                    bucket["count"].as_i64().unwrap() as f64;
 
-                                                for bucket in item["values"].as_array().unwrap() {
-                                                    let value = match bucket["value"].as_str() {
-                                                        Some(value) => value.to_owned(),
-                                                        // Some facet is number, e.g. port, http.html_hash
-                                                        None => bucket["value"]
-                                                            .as_i64()
-                                                            .unwrap()
-                                                            .to_string(),
-                                                    };
-                                                    let count =
-                                                        bucket["count"].as_i64().unwrap() as f64;
-
-                                                    if count > max_y_axis {
-                                                        max_y_axis = count;
-                                                    }
-
-                                                    *facet_values
-                                                        .entry(value.clone())
-                                                        .or_insert(0) += count as i64;
-                                                    tmp_values.insert(value, count);
+                                                if count > max_y_axis {
+                                                    max_y_axis = count;
                                                 }
 
-                                                month_value_maps.push(tmp_values);
-                                                x_axis += 1.0; // Represent each YYYY-MM as float point data
+                                                *facet_values.entry(value.clone()).or_insert(0) +=
+                                                    count as i64;
+                                                tmp_values.insert(value, count);
+                                            }
 
-                                                let month_str = item["key"].as_str().unwrap();
-                                                let parts: Vec<&str> =
-                                                    month_str.split("-").collect();
-                                                x_axis_labels.push(format!(
-                                                    "{} {}",
-                                                    MONTH_ABBR
-                                                        [parts[1].parse::<usize>().unwrap() - 1], // Index start from 0
-                                                    parts[0]
+                                            month_value_maps.push(tmp_values);
+                                            x_axis += 1.0; // Represent each YYYY-MM as float point data
+
+                                            let month_str = item["key"].as_str().unwrap();
+                                            let parts: Vec<&str> = month_str.split('-').collect();
+                                            x_axis_labels.push(format!(
+                                                "{} {}",
+                                                MONTH_ABBR[parts[1].parse::<usize>().unwrap() - 1], // Index start from 0
+                                                parts[0]
+                                            ));
+                                        }
+
+                                        // Construct line chart Points for each facet value
+                                        for (name, total) in facet_values.iter() {
+                                            let mut data: Vec<(f64, f64)> = vec![];
+                                            for (month, maps) in month_value_maps.iter().enumerate()
+                                            {
+                                                data.push((
+                                                    month as f64,
+                                                    maps.get(name).cloned().unwrap_or(0.0),
                                                 ));
                                             }
 
-                                            // Construct line chart Points for each facet value
-                                            for (name, total) in facet_values.iter() {
-                                                let mut data: Vec<(f64, f64)> = vec![];
-                                                for (month, maps) in
-                                                    month_value_maps.iter().enumerate()
-                                                {
-                                                    data.push((
-                                                        month as f64,
-                                                        maps.get(name).cloned().unwrap_or(0.0),
-                                                    ));
-                                                }
-
-                                                datasets.push(Points {
-                                                    label: name.to_owned(),
-                                                    total: *total,
-                                                    data,
-                                                });
-                                            }
-
-                                            x_axis -= 1.0;
-                                            let x_bounds = vec![0.0, x_axis];
-                                            let y_bounds = vec![0.0, max_y_axis];
-
-                                            // Just use three labels as current line chart looks weird on too many ticks
-                                            let x_axis_len = x_axis_labels.len();
-                                            let x_ticks = vec![
-                                                x_axis_labels[0].to_owned(),
-                                                x_axis_labels[x_axis_len / 2].to_owned(),
-                                                x_axis_labels[x_axis_len - 1].to_owned(),
-                                            ];
-                                            let y_ticks = vec![
-                                                String::from("0"),
-                                                ((max_y_axis / 2.0) as i64)
-                                                    .human_count_bare()
-                                                    .to_string(),
-                                                (max_y_axis as i64).human_count_bare().to_string(),
-                                            ];
-
-                                            // A bit sorting facet value has most records first
-                                            datasets.sort_by(|a, b| b.total.cmp(&a.total));
-
-                                            Some(Box::new(Chart {
-                                                datasets,
-                                                x_bounds,
-                                                y_bounds,
-                                                x_ticks,
-                                                y_ticks,
-                                                x_labels: x_axis_labels,
-                                                ..Default::default()
-                                            }))
-                                        }
-                                        false => None,
-                                    };
-
-                                    // Save data to display chart
-                                    self.charts.insert(
-                                        encoded_query.to_owned(),
-                                        Chart {
-                                            datasets: vec![Points {
-                                                label: encoded_query.to_owned(),
-                                                total,
+                                            datasets.push(Points {
+                                                label: name.to_owned(),
+                                                total: *total,
                                                 data,
-                                            }],
+                                            });
+                                        }
+
+                                        x_axis -= 1.0;
+                                        let x_bounds = vec![0.0, x_axis];
+                                        let y_bounds = vec![0.0, max_y_axis];
+
+                                        // Just use three labels as current line chart looks weird on too many ticks
+                                        let x_axis_len = x_axis_labels.len();
+                                        let x_ticks = vec![
+                                            x_axis_labels[0].to_owned(),
+                                            x_axis_labels[x_axis_len / 2].to_owned(),
+                                            x_axis_labels[x_axis_len - 1].to_owned(),
+                                        ];
+                                        let y_ticks = vec![
+                                            String::from("0"),
+                                            ((max_y_axis / 2.0) as i64)
+                                                .human_count_bare()
+                                                .to_string(),
+                                            (max_y_axis as i64).human_count_bare().to_string(),
+                                        ];
+
+                                        // A bit sorting facet value has most records first
+                                        datasets.sort_by(|a, b| b.total.cmp(&a.total));
+
+                                        Some(Box::new(Chart {
+                                            datasets,
                                             x_bounds,
                                             y_bounds,
                                             x_ticks,
                                             y_ticks,
                                             x_labels: x_axis_labels,
-                                            facets: facets_data,
                                             ..Default::default()
-                                        },
-                                    );
-
-                                    // Saved queries to display in sidebar
-                                    if !self.queries.contains(&encoded_query) {
-                                        self.queries.push(encoded_query);
+                                        }))
                                     }
+                                    false => None,
+                                };
 
-                                    self.no_results = false;
+                                // Save data to display chart
+                                self.charts.insert(
+                                    encoded_query.to_owned(),
+                                    Chart {
+                                        datasets: vec![Points {
+                                            label: encoded_query.to_owned(),
+                                            total,
+                                            data,
+                                        }],
+                                        x_bounds,
+                                        y_bounds,
+                                        x_ticks,
+                                        y_ticks,
+                                        x_labels: x_axis_labels,
+                                        facets: facets_data,
+                                    },
+                                );
+
+                                // Saved queries to display in sidebar
+                                if !self.queries.contains(&encoded_query) {
+                                    self.queries.push(encoded_query);
                                 }
 
-                                // Clear error message
-                                self.api_error = "".to_string();
+                                self.no_results = false;
                             }
-                            Err(_) => {
-                                self.api_error = format!("{}", "Failed to parse API response.");
-                            }
+
+                            // Clear error message
+                            self.api_error = "".to_string();
+                        }
+                        Err(_) => {
+                            self.api_error = "Failed to parse API response.".to_string();
                         }
                     }
-                    Err(ureq::Error::Status(_, response)) => {
-                        let resp_str = response.into_string()?;
-                        let error: Value = serde_json::from_str(&resp_str).unwrap_or(json!({
-                            // Failed to parse, e.g. 503 Service Unavailable
-                            "error": "Search failed, please try again later.",
-                        }));
+                }
+                Err(ureq::Error::Status(_, response)) => {
+                    let resp_str = response.into_string()?;
+                    let error: Value = serde_json::from_str(&resp_str).unwrap_or(json!({
+                        // Failed to parse, e.g. 503 Service Unavailable
+                        "error": "Search failed, please try again later.",
+                    }));
 
-                        // API return defined error response
-                        self.api_error = format!("{}", error["error"].as_str().unwrap());
+                    // API return defined error response
+                    self.api_error = format!("{}", error["error"]);
+                }
+                Err(err) => {
+                    // Some kind of io/transport error
+                    if err.to_string().contains("timed out") {
+                        self.api_error = "Timed out, please try again later.".to_string();
+                    } else {
+                        self.api_error = "Search failed, please try again later.".to_string();
                     }
-                    Err(err) => {
-                        // Some kind of io/transport error
-                        if err.to_string().contains("timed out") {
-                            self.api_error = format!("{}", "Timed out, please try again later.");
-                        } else {
-                            self.api_error =
-                                format!("{}", "Search failed, please try again later.");
-                        }
-                    }
-                };
+                }
+            };
 
-                // Release lock
-                self.blocking = 0;
-            }
-            Err(_) => {}
+            // Release lock
+            self.blocking = 0;
         }
 
         // Some widgets need to hide and unfocused (not handle events)
@@ -463,14 +450,12 @@ impl App {
                 self.facet_values.set_hide(true);
                 self.line_chart.set_hide(true);
             }
+        } else if !self.api_error.is_empty() || self.no_results {
+            self.line_chart.set_hide(true);
         } else {
-            if !self.api_error.is_empty() || self.no_results {
-                self.line_chart.set_hide(true);
-            } else {
-                self.saved_queries.set_hide(false);
-                self.facet_values.set_hide(false);
-                self.line_chart.set_hide(false);
-            }
+            self.saved_queries.set_hide(false);
+            self.facet_values.set_hide(false);
+            self.line_chart.set_hide(false);
         }
 
         Ok(())
@@ -490,8 +475,7 @@ impl App {
 
         // Pre validate to skip API call
         if query.is_empty() {
-            // TODO Save allowed facets then do local check?
-            self.api_error = format!("{}", "Invalid search query");
+            self.api_error = "Invalid search query".to_string();
         } else {
             // Lock application, delay terminal events
             self.blocking = 1;

@@ -21,7 +21,7 @@ pub fn get_api_key() -> Result<String, std::io::Error> {
 
     Ok(api_key
         .strip_suffix("\r\n")
-        .or(api_key.strip_suffix("\n"))
+        .or(api_key.strip_suffix('\n'))
         .unwrap_or(&api_key)
         .to_owned())
 }
@@ -30,10 +30,9 @@ pub fn init_api_key(mut key: String) -> Result<(), std::io::Error> {
     // Check if API key is valid
     key = key.trim().to_owned();
 
-    let resp: Result<ureq::Response, ureq::Error> =
-        ureq::get(&format!("https://api.shodan.io/api-info"))
-            .query("key", &key)
-            .call();
+    let resp: Result<ureq::Response, ureq::Error> = ureq::get("https://api.shodan.io/api-info")
+        .query("key", &key)
+        .call();
 
     match resp {
         Ok(_) => {

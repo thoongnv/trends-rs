@@ -59,16 +59,13 @@ impl MultiListState {
     }
 
     pub fn toggle(&mut self) {
-        match self.selected {
-            Some(i) => {
-                // Remove/ add item index if exists/ not exists
-                if self.selected_indexes.contains(&i) {
-                    self.selected_indexes.retain(|&x| x != i);
-                } else {
-                    self.selected_indexes.push(i);
-                }
+        if let Some(i) = self.selected {
+            // Remove/ add item index if exists/ not exists
+            if self.selected_indexes.contains(&i) {
+                self.selected_indexes.retain(|&x| x != i);
+            } else {
+                self.selected_indexes.push(i);
             }
-            None => {}
         };
     }
 }
@@ -306,7 +303,7 @@ impl<'a> StatefulWidget for List<'a> {
                 let symbol = if state.selected_indexes.contains(&i) {
                     highlight_symbol
                 } else {
-                    &unselect_symbol
+                    unselect_symbol
                 };
 
                 let (elem_x, max_element_width) = if has_selection {

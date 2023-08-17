@@ -11,6 +11,12 @@ pub struct LineChart {
     hidden: bool,
 }
 
+impl Default for LineChart {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl LineChart {
     pub fn new() -> Self {
         Self {
@@ -22,6 +28,7 @@ impl LineChart {
     }
 }
 
+#[allow(unused)]
 impl Component for LineChart {
     fn id(&self) -> Uuid {
         self.id

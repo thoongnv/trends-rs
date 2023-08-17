@@ -99,6 +99,12 @@ pub struct MultiStatefulList<T> {
     pub hidden: bool,
 }
 
+impl<T> Default for MultiStatefulList<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T> MultiStatefulList<T> {
     pub fn new() -> MultiStatefulList<T> {
         MultiStatefulList {
@@ -163,8 +169,8 @@ impl<T> Component for MultiStatefulList<T> {
 
     fn handle_events(&mut self, event: Event, state: &mut AppState) {
         if !self.items.is_empty() {
-            match event {
-                Event::Key(key_event) => match key_event.code {
+            if let Event::Key(key_event) = event {
+                match key_event.code {
                     KeyCode::Left => {
                         self.state.with_selected_indexes(vec![]);
                         self.unselect();
@@ -181,8 +187,7 @@ impl<T> Component for MultiStatefulList<T> {
                     KeyCode::Up => self.previous(),
                     KeyCode::Enter => self.toggle(),
                     _ => {}
-                },
-                _ => {}
+                }
             }
 
             // Save selected indexes of each facet values
@@ -216,16 +221,12 @@ impl<T> Component for MultiStatefulList<T> {
 
     fn help_keys(&self) -> Vec<String> {
         vec![
-            format!(
-                "Up/ Down [{}{}]",
-                KeySymbols::UP.to_string(),
-                KeySymbols::DOWN.to_string()
-            ),
-            format!("Toggle [{}]", KeySymbols::ENTER.to_string()),
+            format!("Up/ Down [{}{}]", KeySymbols::UP, KeySymbols::DOWN),
+            format!("Toggle [{}]", KeySymbols::ENTER),
             format!(
                 "Select/ Unselect All [{}{}]",
-                KeySymbols::RIGHT.to_string(),
-                KeySymbols::LEFT.to_string()
+                KeySymbols::RIGHT,
+                KeySymbols::LEFT
             ),
         ]
     }

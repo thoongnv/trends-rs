@@ -1,4 +1,4 @@
-use std::{fs::File, io::Write, path::Path};
+use std::{fs::File, io::Write};
 
 use crate::{
     app::{App, AppResult, AppState},
@@ -37,21 +37,18 @@ pub fn handle_events(event: Event, app: &mut App, state: &mut AppState) -> AppRe
             widgets[widget_index].handle_events(event.clone(), state);
 
             // Unfocus current widget
-            match event {
-                Event::Key(key_event) => match key_event.code {
-                    KeyCode::Esc => {
-                        state.unfocused = true;
-                        widgets[widget_index].set_focus(false);
-                    }
-                    _x => {}
-                },
-                _ => {}
+
+            if let Event::Key(key_event) = event {
+                if key_event.code == KeyCode::Esc {
+                    state.unfocused = true;
+                    widgets[widget_index].set_focus(false);
+                }
             }
 
             // Special handler for focused searchbox
             if widgets[widget_index].allow_enter() {
-                match event {
-                    Event::Key(key_event) => match key_event.code {
+                if let Event::Key(key_event) = event {
+                    match key_event.code {
                         // Switch between searchbox lines
                         KeyCode::Up => {
                             if !app.search_input.focused() {
@@ -70,15 +67,14 @@ pub fn handle_events(event: Event, app: &mut App, state: &mut AppState) -> AppRe
                             app.search(state.sender.clone())?;
                         }
                         _ => {}
-                    },
-                    _ => {}
+                    }
                 }
             }
         }
     }
 
-    match event {
-        Event::Key(key_event) => match key_event.code {
+    if let Event::Key(key_event) = event {
+        match key_event.code {
             KeyCode::Tab => {
                 app.switch_widgets(state, false)?;
             }
@@ -99,7 +95,7 @@ pub fn handle_events(event: Event, app: &mut App, state: &mut AppState) -> AppRe
                                 state.app_log = format!("Exported chart to {}", outfile);
                                 for row in &app.line_chart.data {
                                     let line = row.join(",") + "\n";
-                                    if let Err(_) = file.write_all(line.as_bytes()) {
+                                    if file.write_all(line.as_bytes()).is_err() {
                                         has_error = true;
                                     }
                                 }
@@ -122,8 +118,7 @@ pub fn handle_events(event: Event, app: &mut App, state: &mut AppState) -> AppRe
                 }
             }
             _ => {}
-        },
-        _ => {}
+        }
     }
 
     Ok(())

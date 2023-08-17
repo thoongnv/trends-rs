@@ -6,6 +6,7 @@ use uuid::Uuid;
 
 use crossterm::event::{Event, KeyCode};
 
+#[allow(unused)]
 // https://github.com/ratatui-org/ratatui/blob/v0.22.0/examples/user_input.rs
 #[derive(Debug)]
 pub struct UserInput {
@@ -22,6 +23,7 @@ pub struct UserInput {
     hidden: bool,
 }
 
+#[allow(unused)]
 impl UserInput {
     pub fn new(input: String) -> Self {
         let cursor_position = input.len();
@@ -98,14 +100,15 @@ impl UserInput {
     }
 }
 
+#[allow(unused)]
 impl Component for UserInput {
     fn id(&self) -> Uuid {
         self.id
     }
 
     fn handle_events(&mut self, event: Event, state: &mut AppState) {
-        match event {
-            Event::Key(key_event) => match key_event.code {
+        if let Event::Key(key_event) = event {
+            match key_event.code {
                 KeyCode::Char(to_insert) => {
                     self.enter_char(to_insert);
                 }
@@ -120,8 +123,7 @@ impl Component for UserInput {
                 }
                 // TODO Handle more key events: Tab to insert space, Ctrl+W to delete previous word?
                 _ => {}
-            },
-            _ => {}
+            }
         }
     }
 
@@ -148,18 +150,10 @@ impl Component for UserInput {
     fn help_keys(&self) -> Vec<String> {
         // TODO Find a better way to map key events in fn handle_events to this?
         vec![
-            format!("Search [{}]", KeySymbols::ENTER.to_string()),
-            format!(
-                "Move cursor [{}{}]",
-                KeySymbols::LEFT.to_string(),
-                KeySymbols::RIGHT.to_string()
-            ),
-            format!("Delete Char [{}]", KeySymbols::BACKSPACE.to_string()),
-            format!(
-                "Up/ Down [{}{}]",
-                KeySymbols::UP.to_string(),
-                KeySymbols::DOWN.to_string()
-            ),
+            format!("Search [{}]", KeySymbols::ENTER),
+            format!("Move cursor [{}{}]", KeySymbols::LEFT, KeySymbols::RIGHT),
+            format!("Delete Char [{}]", KeySymbols::BACKSPACE),
+            format!("Up/ Down [{}{}]", KeySymbols::UP, KeySymbols::DOWN),
         ]
     }
 }

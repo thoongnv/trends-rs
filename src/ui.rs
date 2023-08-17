@@ -96,14 +96,14 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
 
     let mut help_keys = vec![];
     let mut default_keys = vec![
-        format!("Switch panels [{}]", KeySymbols::TAB.to_string()),
-        format!("Exit [{}C]", KeySymbols::CONTROL.to_string()),
+        format!("Switch panels [{}]", KeySymbols::TAB),
+        format!("Exit [{}C]", KeySymbols::CONTROL),
     ];
 
     if !app.search_input.focused() && !app.facets_input.focused() {
         default_keys.insert(
             default_keys.len() - 1,
-            format!("Export [{}E]", KeySymbols::CONTROL.to_string()),
+            format!("Export [{}E]", KeySymbols::CONTROL),
         );
     }
 
@@ -111,7 +111,7 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
     for (_, widget) in app.get_widgets().into_iter().enumerate() {
         if widget.focused() && !widget.hidden() {
             help_keys = widget.help_keys().to_owned();
-            help_keys.push(format!("Unfocused [{}]", KeySymbols::ESC.to_string()));
+            help_keys.push(format!("Unfocused [{}]", KeySymbols::ESC));
             break;
         }
     }
@@ -135,7 +135,7 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
             .split(layouts[2]);
         frame.render_widget(help_commands, footer_layout[0]);
 
-        let footer_msg = Paragraph::new(format!("{}", state.app_log))
+        let footer_msg = Paragraph::new(state.app_log.to_string())
             .block(Block::default().padding(footer_padding))
             .alignment(Alignment::Right);
         frame.render_widget(footer_msg, footer_layout[1]);
@@ -397,28 +397,25 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
             }
         } else {
             // Only handle users interactive event in MultiStatefulList, the above `app.saved_queries.state.select` won't go there
-            match app.saved_queries.state.selected() {
-                Some(index) => {
-                    for (i, query) in query_lines.iter().enumerate() {
-                        if i == index {
-                            selected_query = query;
-                            break;
-                        }
+            if let Some(index) = app.saved_queries.state.selected() {
+                for (i, query) in query_lines.iter().enumerate() {
+                    if i == index {
+                        selected_query = query;
+                        break;
                     }
+                }
 
-                    // Load correct query/ facets in search box if select differently with previous
-                    if selected_query != &app.prev_query {
-                        let decoded_query = form_urlencoded::parse(selected_query.as_bytes());
-                        for pair in decoded_query.into_iter() {
-                            if pair.0 == "query" {
-                                app.search_input.set_input(&pair.1);
-                            } else if pair.0 == "facets" {
-                                app.facets_input.set_input(&pair.1);
-                            }
+                // Load correct query/ facets in search box if select differently with previous
+                if selected_query != &app.prev_query {
+                    let decoded_query = form_urlencoded::parse(selected_query.as_bytes());
+                    for pair in decoded_query.into_iter() {
+                        if pair.0 == "query" {
+                            app.search_input.set_input(&pair.1);
+                        } else if pair.0 == "facets" {
+                            app.facets_input.set_input(&pair.1);
                         }
                     }
                 }
-                None => {}
             }
         }
 
@@ -449,29 +446,26 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
 
             for index in app.saved_queries.state.selected_indexes() {
                 let query = &app.queries[*index];
-                match app.charts.get(query) {
-                    Some(chart) => {
-                        datasets.push(
-                            Dataset::default()
-                                // .name(query.to_owned())
-                                .marker(symbols::Marker::Braille)
-                                .graph_type(GraphType::Line)
-                                .style(Style::default().fg(query_colors[query]))
-                                .data(&chart.datasets[0].data),
-                        );
+                if let Some(chart) = app.charts.get(query) {
+                    datasets.push(
+                        Dataset::default()
+                            // .name(query.to_owned())
+                            .marker(symbols::Marker::Braille)
+                            .graph_type(GraphType::Line)
+                            .style(Style::default().fg(query_colors[query]))
+                            .data(&chart.datasets[0].data),
+                    );
 
-                        let chart_y_axis = chart.y_bounds[chart.y_bounds.len() - 1];
-                        if chart_y_axis > max_y_axis {
-                            max_y_axis = chart_y_axis;
-                        }
-
-                        // Build chart data
-                        chart_data[0].push(query.to_string());
-                        for (i, point) in chart.datasets[0].data.iter().enumerate() {
-                            chart_data[i + 1].push(point.1.to_string());
-                        }
+                    let chart_y_axis = chart.y_bounds[chart.y_bounds.len() - 1];
+                    if chart_y_axis > max_y_axis {
+                        max_y_axis = chart_y_axis;
                     }
-                    None => {}
+
+                    // Build chart data
+                    chart_data[0].push(query.to_string());
+                    for (i, point) in chart.datasets[0].data.iter().enumerate() {
+                        chart_data[i + 1].push(point.1.to_string());
+                    }
                 }
             }
 
