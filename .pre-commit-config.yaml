@@ -5,6 +5,15 @@ repos:
       - id: check-yaml
       - id: trailing-whitespace
 
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.17.0
+    hooks:
+      - id: gitleaks
+        description: Detect hardcoded secrets using Gitleaks
+        entry: gitleaks protect --verbose --redact --staged
+        language: golang
+        pass_filenames: false
+
   - repo: local
     hooks:
       - id: cargo-fmt
@@ -24,12 +33,9 @@ repos:
         entry: bash -c 'cargo clippy; git add -u' --
         language: rust
 
-  - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.17.0
-    hooks:
-      - id: gitleaks
-        description: Detect hardcoded secrets using Gitleaks
-        entry: gitleaks protect --verbose --redact --staged
-        language: golang
+      - id: cargo-test
+        name: cargo test
+        entry: cargo test
+        args: ["--", "--nocapture"]
+        language: rust
         pass_filenames: false
-
