@@ -8,7 +8,7 @@
 
 ``strend`` fetches data via the [Shodan Trends](https://trends.shodan.io) API, please check [docs](https://developer.shodan.io/api) for more information.
 
-![Sample Output](output-sample.png)
+![Sample](sample.png)
 
 ## Installation
 
