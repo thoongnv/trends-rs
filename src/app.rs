@@ -205,12 +205,6 @@ impl App {
         if let Ok(resp) = self.receiver.try_recv() {
             let query = self.search_input.get_input().to_owned();
             let facets = self.facets_input.get_input().trim().to_owned();
-            let encoded_query: String = form_urlencoded::Serializer::new(String::new())
-                .append_pair("query", &query)
-                .append_pair("facets", &facets)
-                .finish();
-            // Save last submitted query
-            self.last_query = encoded_query.to_owned();
 
             match resp {
                 Ok(response) => {
@@ -385,6 +379,12 @@ impl App {
                                     false => None,
                                 };
 
+                                let encoded_query: String =
+                                    form_urlencoded::Serializer::new(String::new())
+                                        .append_pair("query", &query)
+                                        .append_pair("facets", &facets)
+                                        .finish();
+
                                 // Save data to display chart
                                 self.charts.insert(
                                     encoded_query.to_owned(),
@@ -427,7 +427,7 @@ impl App {
                     }));
 
                     // API return defined error response
-                    self.api_error = format!("{}", error["error"]);
+                    self.api_error = error["error"].as_str().unwrap().to_string();
                 }
                 Err(err) => {
                     // Some kind of io/transport error
@@ -472,6 +472,13 @@ impl App {
     ) -> AppResult<()> {
         let query = self.search_input.get_input().to_owned();
         let facets = self.facets_input.get_input().trim().to_owned();
+        let encoded_query: String = form_urlencoded::Serializer::new(String::new())
+            .append_pair("query", &query)
+            .append_pair("facets", &facets)
+            .finish();
+
+        // Save last submitted query
+        self.last_query = encoded_query;
 
         // Pre validate to skip API call
         if query.is_empty() {
