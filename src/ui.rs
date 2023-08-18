@@ -100,7 +100,8 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
         format!("Exit [{}C]", KeySymbols::CONTROL),
     ];
 
-    if !app.search_input.focused() && !app.facets_input.focused() {
+    if !app.search_input.focused() && !app.facets_input.focused() && !app.line_chart.data.is_empty()
+    {
         default_keys.insert(
             default_keys.len() - 1,
             format!("Export [{}E]", KeySymbols::CONTROL),
