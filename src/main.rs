@@ -101,3 +101,7 @@ fn main() -> AppResult<()> {
     tui.exit()?;
     Ok(())
 }
+
+// Move tests to separate file
+#[cfg(test)]
+mod test;
