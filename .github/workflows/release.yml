@@ -140,18 +140,16 @@ jobs:
       - name: Install cargo-deb
         run: cargo install cargo-deb
       - name: Build deb package
-        run: cargo deb
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: strend
-          path: target/debian/strend-*.deb
+        shell: bash
+        run: |
+          cargo deb
+          mv target/debian/strend_${{ github.ref_name }}_amd64.deb target/debian/strend-${{ github.ref_name }}-x86_64.deb
       - name: Releasing assets
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            target/debian/strend-*.deb
+            target/debian/strend-${{ github.ref_name }}-x86_64.deb
 
   rpm-publish:
     name: Publish rpm package
@@ -165,18 +163,17 @@ jobs:
           args: --release
       - name: Install rpm
         run: sudo apt-get install rpm
+      # TODO Switch to other rpm generator as https://github.com/iqlusioninc/cargo-rpm is no longer maintained
       - name: Install cargo-rpm
         run: cargo install cargo-rpm
       - name: Build rpm package
-        run: cargo rpm build
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: strend
-          path: target/release/rpmbuild/RPMS/x86_64/strend-*.x86_64.rpm
+        shell: bash
+        run: |
+          cargo rpm build
+          mv target/release/rpmbuild/RPMS/x86_64/strend-${{ github.ref_name }}*.rpm target/release/rpmbuild/RPMS/x86_64/strend-${{ github.ref_name }}-x86_64.rpm
       - name: Releasing assets
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            target/release/rpmbuild/RPMS/x86_64/strend-*.x86_64.rpm
+            target/release/rpmbuild/RPMS/x86_64/strend-${{ github.ref_name }}-x86_64.rpm
