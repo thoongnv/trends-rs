@@ -678,12 +678,24 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
                 }
             }
             None => {
+                let center_layout = Layout::default()
+                    .direction(Direction::Vertical)
+                    .constraints(
+                        [
+                            Constraint::Percentage(40),
+                            Constraint::Percentage(20),
+                            Constraint::Percentage(40),
+                        ]
+                        .as_ref(),
+                    )
+                    .split(main_layouts[1]);
+
                 // Error or no results query don't save to app.charts
                 if !app.api_error.is_empty() {
-                    frame.render_widget(error_block, layouts[1]);
+                    frame.render_widget(error_block, main_layouts[1]);
                     frame.render_widget(error_widget, center_layout[1]);
                 } else if app.no_results {
-                    frame.render_widget(info_block, layouts[1]);
+                    frame.render_widget(info_block, main_layouts[1]);
                     frame.render_widget(no_results_widget, center_layout[1]);
                 }
 
