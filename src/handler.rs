@@ -109,6 +109,9 @@ pub fn handle_events(event: Event, app: &mut App, state: &mut AppState) -> AppRe
                             state.app_log = "Failed to export chart data".to_string();
                         }
                     }
+
+                    // Reset ticks
+                    app.ticks = 0;
                 }
             }
             // Exit application on `Ctrl-C`
