@@ -315,7 +315,7 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
             frame.render_widget(welcome, center_layout[1]);
         }
     } else {
-        // We have saved queries then we should show it, errors on the right side if any
+        // We have saved queries then we should show it
         let main_layouts = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([Constraint::Percentage(20), Constraint::Percentage(80)].as_ref())
@@ -323,6 +323,45 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
         let sidebar_layouts = Layout::default()
             .constraints([Constraint::Percentage(30), Constraint::Percentage(70)].as_ref())
             .split(main_layouts[0]);
+
+        // Error on the right side if any
+        if !app.api_error.is_empty() || app.no_results {
+            // Unselect left lines
+            app.saved_queries.state.with_selected_indexes(vec![]);
+            app.facet_values.state.with_selected_indexes(vec![]);
+            app.saved_queries.state.select(None);
+            app.facet_values.state.select(None);
+
+            let center_layout = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints(
+                    [
+                        Constraint::Percentage(40),
+                        Constraint::Percentage(20),
+                        Constraint::Percentage(40),
+                    ]
+                    .as_ref(),
+                )
+                .split(main_layouts[1]);
+
+            if !app.api_error.is_empty() {
+                frame.render_widget(error_block, main_layouts[1]);
+                frame.render_widget(error_widget, center_layout[1]);
+            } else {
+                frame.render_widget(info_block, main_layouts[1]);
+                frame.render_widget(no_results_widget, center_layout[1]);
+            }
+        }
+
+        // Auto highlight on first initialize if have only one saved query and there is no error
+        if app.charts.len() == 1
+            && app.saved_queries.items.is_empty()
+            && app.api_error.is_empty()
+            && !app.no_results
+        {
+            app.saved_queries.state.with_selected_indexes(vec![0]);
+            app.saved_queries.state.select(Some(0));
+        }
 
         // Build saved queries block
         let mut query_lines: Vec<String> = vec![];
@@ -337,16 +376,6 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
             let lines = vec![Line::from(vec![query.to_owned().into()])];
             query_items.push(MultiListItem::new(lines).style(Style::default().fg(label_color)));
             query_lines.push(query.to_owned());
-        }
-
-        // Auto highlight on first initialize if have only one saved query and there is no error
-        if app.charts.len() == 1
-            && app.saved_queries.items.is_empty()
-            && app.api_error.is_empty()
-            && !app.no_results
-        {
-            app.saved_queries.state.with_selected_indexes(vec![0]);
-            app.saved_queries.state.select(Some(0));
         }
         app.saved_queries.set_items(query_lines.clone());
 
@@ -368,11 +397,6 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
             )
             .highlight_symbol(" [x] ")
             .unselect_symbol(" [ ] ");
-        frame.render_stateful_widget(
-            saved_queries,
-            sidebar_layouts[0],
-            &mut app.saved_queries.state,
-        );
 
         // Reserve empty facet values block, update later if user requested facets in their query
         let facet_values = Block::default()
@@ -382,7 +406,6 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
                 true => focused_style,
                 _ => Style::default(),
             });
-        frame.render_widget(facet_values, sidebar_layouts[1]);
 
         // Get last submitted query
         let mut selected_query = &app.last_query.to_owned();
@@ -419,6 +442,14 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
                 }
             }
         }
+
+        // Render later after state updated
+        frame.render_stateful_widget(
+            saved_queries,
+            sidebar_layouts[0],
+            &mut app.saved_queries.state,
+        );
+        frame.render_widget(facet_values, sidebar_layouts[1]);
 
         // Default draw total chart if unfocused facet values block
         if !app.facet_values.focused() {
@@ -517,193 +548,160 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
         }
 
         // Build facets blocks corresponding to selected query
-        match app.charts.get(selected_query) {
-            Some(chart) => {
-                let mut facet_colors: HashMap<String, Color> = HashMap::new();
-                let mut facet_lines: Vec<String> = vec![];
+        if let Some(chart) = app.charts.get(selected_query) {
+            let mut facet_colors: HashMap<String, Color> = HashMap::new();
+            let mut facet_lines: Vec<String> = vec![];
 
-                // Load facet values if any
-                match &chart.facets {
-                    Some(chart) => {
-                        let mut facet_items: Vec<MultiListItem> = vec![];
+            // Load facet values if any
+            match &chart.facets {
+                Some(chart) => {
+                    let mut facet_items: Vec<MultiListItem> = vec![];
 
-                        for (mut index, point) in chart.datasets.iter().enumerate() {
-                            // Just a bit catch, but 30 defined colors are too many, and we shouldn't overflow widget
-                            while index >= colors_len {
-                                index -= colors_len;
+                    for (mut index, point) in chart.datasets.iter().enumerate() {
+                        // Just a bit catch, but 30 defined colors are too many, and we shouldn't overflow widget
+                        while index >= colors_len {
+                            index -= colors_len;
+                        }
+                        let label_color = LINE_COLORS[index];
+                        facet_colors.insert(point.label.to_owned(), label_color);
+
+                        let lines = vec![Line::from(vec![point.label.to_owned().into()])];
+                        facet_items.push(
+                            MultiListItem::new(lines).style(Style::default().fg(label_color)),
+                        );
+                        facet_lines.push(point.label.to_owned());
+                    }
+
+                    // Highlight facet lines
+                    if !facet_lines.is_empty() {
+                        match state.facet_indexes.get(selected_query) {
+                            Some(facet_index) => {
+                                // Load previous selected indexes
+                                app.facet_values
+                                    .state
+                                    .with_selected_indexes(facet_index.selected_indexes.to_owned());
+
+                                if selected_query != &app.prev_query {
+                                    app.facet_values.state.select(facet_index.selected);
+                                }
                             }
-                            let label_color = LINE_COLORS[index];
-                            facet_colors.insert(point.label.to_owned(), label_color);
+                            None => {
+                                // On first initialize
+                                app.facet_values.state.with_selected_indexes(Vec::from_iter(
+                                    0..(cmp::min(SELECTED_FACET_LINES, facet_lines.len())),
+                                ));
+                                app.facet_values
+                                    .state
+                                    .select(Some(app.facet_values.state.selected_indexes().len()));
+                            }
+                        }
+                        // Attach state key for saving indexes later on Enter
+                        app.facet_values
+                            .set_state_key(Some(selected_query.to_owned()));
+                    }
+                    app.facet_values.set_items(facet_lines.clone());
 
-                            let lines = vec![Line::from(vec![point.label.to_owned().into()])];
-                            facet_items.push(
-                                MultiListItem::new(lines).style(Style::default().fg(label_color)),
+                    let facet_values: MultiList<'_> = MultiList::new(facet_items)
+                        .block(
+                            Block::default()
+                                .borders(Borders::ALL)
+                                .title("Facet values")
+                                .border_style(match app.facet_values.focused() {
+                                    true => focused_style,
+                                    _ => Style::default(),
+                                }),
+                        )
+                        .highlight_style(
+                            Style::default()
+                                .fg(Color::Black)
+                                .bg(Color::LightYellow)
+                                .add_modifier(Modifier::BOLD),
+                        );
+                    frame.render_stateful_widget(
+                        facet_values,
+                        sidebar_layouts[1],
+                        &mut app.facet_values.state,
+                    );
+
+                    // Load facets chart
+                    if app.facet_values.focused() {
+                        let selected_facets = app.facet_values.state.selected_indexes();
+                        let mut chart_data: Vec<Vec<String>> = vec![vec!["Month".to_string()]];
+                        let mut datasets = vec![];
+
+                        for month in &chart.x_labels {
+                            chart_data.push(vec![month.to_owned()]);
+                        }
+
+                        for (_, point) in chart
+                            .datasets
+                            .iter()
+                            .enumerate()
+                            .filter(|(index, _)| selected_facets.contains(index))
+                        {
+                            datasets.push(
+                                Dataset::default()
+                                    // Disable chart legend as we already show color in facet values block,
+                                    // current legend won't display if facet line too long.
+                                    // .name(point.label.to_owned())
+                                    .marker(symbols::Marker::Braille)
+                                    .graph_type(GraphType::Line)
+                                    .style(
+                                        Style::default().fg(facet_colors[&point.label.to_owned()]),
+                                    )
+                                    .data(&point.data),
                             );
-                            facet_lines.push(point.label.to_owned());
-                        }
 
-                        // Highlight facet lines
-                        if !facet_lines.is_empty() {
-                            match state.facet_indexes.get(selected_query) {
-                                Some(facet_index) => {
-                                    // Load previous selected indexes
-                                    app.facet_values.state.with_selected_indexes(
-                                        facet_index.selected_indexes.to_owned(),
-                                    );
-
-                                    if selected_query != &app.prev_query {
-                                        app.facet_values.state.select(facet_index.selected);
-                                    }
-                                }
-                                None => {
-                                    // On first initialize
-                                    app.facet_values.state.with_selected_indexes(Vec::from_iter(
-                                        0..(cmp::min(SELECTED_FACET_LINES, facet_lines.len())),
-                                    ));
-                                    app.facet_values.state.select(Some(
-                                        app.facet_values.state.selected_indexes().len(),
-                                    ));
-                                }
+                            // Build saved data
+                            chart_data[0].push(point.label.to_owned());
+                            for (i, point) in point.data.iter().enumerate() {
+                                chart_data[i + 1].push(point.1.to_string());
                             }
-                            // Attach state key for saving indexes later on Enter
-                            app.facet_values
-                                .set_state_key(Some(selected_query.to_owned()));
                         }
-                        app.facet_values.set_items(facet_lines.clone());
 
-                        let facet_values: MultiList<'_> = MultiList::new(facet_items)
+                        // Don't want to override if data is the same
+                        if app.line_chart.data != chart_data {
+                            app.line_chart.data = chart_data;
+                        }
+
+                        let facet_chart = Chart::new(datasets)
                             .block(
                                 Block::default()
-                                    .borders(Borders::ALL)
-                                    .title("Facet values")
-                                    .border_style(match app.facet_values.focused() {
-                                        true => focused_style,
-                                        _ => Style::default(),
-                                    }),
+                                    .borders(Borders::NONE)
+                                    .padding(Padding::new(1, 0, 1, 0)),
                             )
-                            .highlight_style(
-                                Style::default()
-                                    .fg(Color::Black)
-                                    .bg(Color::LightYellow)
-                                    .add_modifier(Modifier::BOLD),
+                            .x_axis(
+                                Axis::default()
+                                    .style(match app.line_chart.focused() {
+                                        true => focused_style,
+                                        false => Style::default().fg(Color::Gray),
+                                    })
+                                    .bounds([
+                                        chart.x_bounds[0],
+                                        chart.x_bounds[chart.x_bounds.len() - 1],
+                                    ])
+                                    .labels(
+                                        chart.x_ticks.iter().cloned().map(Span::from).collect(),
+                                    ),
+                            )
+                            .y_axis(
+                                Axis::default()
+                                    .style(match app.line_chart.focused() {
+                                        true => focused_style,
+                                        false => Style::default().fg(Color::Gray),
+                                    })
+                                    .bounds([
+                                        chart.y_bounds[0],
+                                        chart.y_bounds[chart.y_bounds.len() - 1],
+                                    ])
+                                    .labels(chart.y_ticks.iter().cloned().map(Span::from).collect())
+                                    .labels_alignment(Alignment::Center),
                             );
-                        frame.render_stateful_widget(
-                            facet_values,
-                            sidebar_layouts[1],
-                            &mut app.facet_values.state,
-                        );
 
-                        // Load facets chart
-                        if app.facet_values.focused() {
-                            let selected_facets = app.facet_values.state.selected_indexes();
-                            let mut chart_data: Vec<Vec<String>> = vec![vec!["Month".to_string()]];
-                            let mut datasets = vec![];
-
-                            for month in &chart.x_labels {
-                                chart_data.push(vec![month.to_owned()]);
-                            }
-
-                            for (_, point) in chart
-                                .datasets
-                                .iter()
-                                .enumerate()
-                                .filter(|(index, _)| selected_facets.contains(index))
-                            {
-                                datasets.push(
-                                    Dataset::default()
-                                        // Disable chart legend as we already show color in facet values block,
-                                        // current legend won't display if facet line too long.
-                                        // .name(point.label.to_owned())
-                                        .marker(symbols::Marker::Braille)
-                                        .graph_type(GraphType::Line)
-                                        .style(
-                                            Style::default()
-                                                .fg(facet_colors[&point.label.to_owned()]),
-                                        )
-                                        .data(&point.data),
-                                );
-
-                                // Build saved data
-                                chart_data[0].push(point.label.to_owned());
-                                for (i, point) in point.data.iter().enumerate() {
-                                    chart_data[i + 1].push(point.1.to_string());
-                                }
-                            }
-
-                            // Don't want to override if data is the same
-                            if app.line_chart.data != chart_data {
-                                app.line_chart.data = chart_data;
-                            }
-
-                            let facet_chart = Chart::new(datasets)
-                                .block(
-                                    Block::default()
-                                        .borders(Borders::NONE)
-                                        .padding(Padding::new(1, 0, 1, 0)),
-                                )
-                                .x_axis(
-                                    Axis::default()
-                                        .style(match app.line_chart.focused() {
-                                            true => focused_style,
-                                            false => Style::default().fg(Color::Gray),
-                                        })
-                                        .bounds([
-                                            chart.x_bounds[0],
-                                            chart.x_bounds[chart.x_bounds.len() - 1],
-                                        ])
-                                        .labels(
-                                            chart.x_ticks.iter().cloned().map(Span::from).collect(),
-                                        ),
-                                )
-                                .y_axis(
-                                    Axis::default()
-                                        .style(match app.line_chart.focused() {
-                                            true => focused_style,
-                                            false => Style::default().fg(Color::Gray),
-                                        })
-                                        .bounds([
-                                            chart.y_bounds[0],
-                                            chart.y_bounds[chart.y_bounds.len() - 1],
-                                        ])
-                                        .labels(
-                                            chart.y_ticks.iter().cloned().map(Span::from).collect(),
-                                        )
-                                        .labels_alignment(Alignment::Center),
-                                );
-
-                            frame.render_widget(facet_chart, main_layouts[1]);
-                        }
+                        frame.render_widget(facet_chart, main_layouts[1]);
                     }
-                    None => {}
                 }
-            }
-            None => {
-                let center_layout = Layout::default()
-                    .direction(Direction::Vertical)
-                    .constraints(
-                        [
-                            Constraint::Percentage(40),
-                            Constraint::Percentage(20),
-                            Constraint::Percentage(40),
-                        ]
-                        .as_ref(),
-                    )
-                    .split(main_layouts[1]);
-
-                // Error or no results query don't save to app.charts
-                if !app.api_error.is_empty() {
-                    frame.render_widget(error_block, main_layouts[1]);
-                    frame.render_widget(error_widget, center_layout[1]);
-                } else if app.no_results {
-                    frame.render_widget(info_block, main_layouts[1]);
-                    frame.render_widget(no_results_widget, center_layout[1]);
-                }
-
-                // Unselect all lines
-                app.saved_queries.state.with_selected_indexes(vec![]);
-                app.facet_values.state.with_selected_indexes(vec![]);
-                app.saved_queries.state.select(None);
-                app.facet_values.state.select(None);
+                None => {}
             }
         }
 
