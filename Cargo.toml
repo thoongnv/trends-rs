@@ -30,11 +30,7 @@ codegen-units = 1
 [dev-dependencies]
 unicode-width = "0.1.10"
 
-[package.metadata.rpm]
-package = "strend"
-
-[package.metadata.rpm.cargo]
-buildflags = ["--release"]
-
-[package.metadata.rpm.targets]
-strend = { path = "/usr/bin/strend" }
+[package.metadata.generate-rpm]
+assets = [
+    { source = "target/x86_64-unknown-linux-musl/release/strend", dest = "/usr/bin/strend", mode = "755" },
+]
