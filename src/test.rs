@@ -25,6 +25,8 @@ use strend::util;
 
 #[test]
 fn launch_app_and_make_few_searches() -> AppResult<()> {
+    let mut server = mockito::Server::new();
+
     // Only mock tests if running in Github CI
     if let Ok(_) = env::var("GITHUB_ACTIONS") {
         use std::io::Write;
@@ -55,9 +57,8 @@ fn launch_app_and_make_few_searches() -> AppResult<()> {
             }
 
             file.write_all("invalid".as_bytes())?;
+            println!("Invalid API key created");
         }
-
-        let mut server = mockito::Server::new();
 
         // Mock API url
         env::set_var("MOCK_API_URL", server.url());
@@ -88,7 +89,7 @@ fn launch_app_and_make_few_searches() -> AppResult<()> {
                 mockito::Matcher::UrlEncoded("facets".into(), "orggg".into()),
             ]))
             .with_status(400)
-            .with_body(r#"{"error":"Invalid search facet"}"#)
+            .with_body(r#"{"error": "Invalid search facet"}"#)
             .create();
 
         server

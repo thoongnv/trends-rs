@@ -95,4 +95,4 @@ jobs:
 
     - name: Run tests
       if: matrix.build != 'macos-arm'
-      run: ${{ env.CARGO }} test -- --nocapture ${{ env.TARGET_FLAGS }}
+      run: ${{ env.CARGO }} test ${{ env.TARGET_FLAGS }} -- --nocapture
