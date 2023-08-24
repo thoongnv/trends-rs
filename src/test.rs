@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 use std::env;
 use std::fmt::Write;
-use std::fs;
-use std::fs::OpenOptions;
 use std::sync::mpsc;
 use std::thread::sleep;
 use std::time::Duration;
@@ -29,35 +27,9 @@ fn launch_app_and_make_few_searches() -> AppResult<()> {
 
     // Only mock tests if running in Github CI
     if let Ok(_) = env::var("GITHUB_ACTIONS") {
-        use std::io::Write;
-
-        // Create temp API key file as we will mock API requests below
+        // Create temp key file as we will mock API requests later
         if let Err(_) = util::get_api_key() {
-            let config_dir: String = util::get_config_dir();
-            fs::create_dir_all(config_dir.clone())?;
-
-            // Save key to file
-            let fpath = format!("{}/api_key", config_dir);
-            let mut file;
-
-            #[cfg(unix)]
-            {
-                use std::os::unix::prelude::OpenOptionsExt;
-                file = OpenOptions::new()
-                    .create(true)
-                    .write(true)
-                    .mode(0o600)
-                    .open(fpath)?;
-            }
-
-            // On Windows
-            #[cfg(not(unix))]
-            {
-                file = OpenOptions::new().create(true).write(true).open(fpath)?;
-            }
-
-            file.write_all("invalid".as_bytes())?;
-            println!("Invalid API key created");
+            util::init_api_key("invalid".to_string(), false)?;
         }
 
         // Mock API url

@@ -26,53 +26,63 @@ pub fn get_api_key() -> Result<String, std::io::Error> {
         .to_owned())
 }
 
-pub fn init_api_key(mut key: String) -> Result<(), std::io::Error> {
+pub fn init_api_key(mut key: String, validate: bool) -> Result<(), std::io::Error> {
     // Check if API key is valid
     key = key.trim().to_owned();
+    let mut valid = false;
 
-    let resp: Result<ureq::Response, ureq::Error> = ureq::get("https://api.shodan.io/api-info")
-        .query("key", &key)
-        .call();
+    if validate {
+        let resp: Result<ureq::Response, ureq::Error> = ureq::get("https://api.shodan.io/api-info")
+            .query("key", &key)
+            .call();
 
-    match resp {
-        Ok(_) => {
-            // Create the directory if missing
-            let config_dir: String = get_config_dir();
-            fs::create_dir_all(config_dir.clone())?;
-
-            // Save key to file
-            let fpath = format!("{}/api_key", config_dir);
-            let mut file;
-
-            #[cfg(unix)]
-            {
-                use std::os::unix::prelude::OpenOptionsExt;
-                file = OpenOptions::new()
-                    .create(true)
-                    .write(true)
-                    .mode(0o600)
-                    .open(fpath)?;
+        match resp {
+            Ok(_) => {
+                valid = true;
             }
-
-            // Skip setting file permission on Windows
-            #[cfg(not(unix))]
-            {
-                file = OpenOptions::new().create(true).write(true).open(fpath)?;
+            Err(ureq::Error::Status(_, response)) => {
+                let resp_str = response.into_string()?;
+                let error: Value = serde_json::from_str(&resp_str).unwrap_or(json!({
+                    "error": "Invalid API key",
+                }));
+                println!("Error: {}", error["error"].as_str().unwrap());
             }
+            Err(_) => {
+                println!("Error: Failed to validate API key");
+            }
+        }
+    } else {
+        // Force save key
+        valid = true;
+    }
 
-            file.write_all(key.as_bytes())?;
-            println!("Successfully initialized");
+    if valid {
+        // Create the directory if missing
+        let config_dir: String = get_config_dir();
+        fs::create_dir_all(config_dir.clone())?;
+
+        // Save key to file
+        let fpath = format!("{}/api_key", config_dir);
+        let mut file;
+
+        #[cfg(not(windows))]
+        {
+            use std::os::unix::prelude::OpenOptionsExt;
+            file = OpenOptions::new()
+                .create(true)
+                .write(true)
+                .mode(0o600)
+                .open(fpath)?;
         }
-        Err(ureq::Error::Status(_, response)) => {
-            let resp_str = response.into_string()?;
-            let error: Value = serde_json::from_str(&resp_str).unwrap_or(json!({
-                "error": "Invalid API key",
-            }));
-            println!("Error: {}", error["error"].as_str().unwrap());
+
+        // Skip setting file permission on Windows
+        #[cfg(windows)]
+        {
+            file = OpenOptions::new().create(true).write(true).open(fpath)?;
         }
-        Err(_) => {
-            println!("Error: Failed to validate API key");
-        }
+
+        file.write_all(key.as_bytes())?;
+        println!("Successfully initialized");
     }
 
     Ok(())

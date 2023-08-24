@@ -41,7 +41,7 @@ fn main() -> AppResult<()> {
 
     match &cli.command {
         Some(Commands::Init { key }) => {
-            init_api_key(key.to_string())?;
+            init_api_key(key.to_string(), true)?;
             std::process::exit(EXIT_SUCCESS_CODE);
         }
         None => {}
