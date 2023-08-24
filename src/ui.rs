@@ -432,11 +432,11 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
                 // Load correct query/ facets in search box if select differently with previous
                 if selected_query != &app.prev_query {
                     let decoded_query = form_urlencoded::parse(selected_query.as_bytes());
-                    for pair in decoded_query.into_iter() {
-                        if pair.0 == "query" {
-                            app.search_input.set_input(&pair.1);
-                        } else if pair.0 == "facets" {
-                            app.facets_input.set_input(&pair.1);
+                    for (key, val) in decoded_query.into_iter() {
+                        if key == "query" {
+                            app.search_input.set_input(&val);
+                        } else if key == "facets" {
+                            app.facets_input.set_input(&val);
                         }
                     }
                 }

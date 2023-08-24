@@ -14,13 +14,13 @@ use crate::util;
 use human_repr::HumanCount;
 use serde_json::{self, Value};
 use std::collections::BTreeMap;
+use std::env;
 use ureq;
 use url::form_urlencoded;
 
 /// Application result type.
 pub type AppResult<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
-const API_ENDPOINT: &str = "https://trends.shodan.io";
 const API_TIMEOUT: u64 = 90; // in seconds
 
 // Trends API data already in right format so we just need a bit mapping, otherwise use create chrono for datetime parsing
@@ -56,6 +56,7 @@ pub struct App {
     pub tick_rate: u64,
     pub ticks: usize, // Used to clear some data after number of ticks
 
+    api_url: String,
     api_key: String,
     pub no_results: bool,
     pub queries: Vec<String>, // Hold success queries (exclude no results or errored out query)
@@ -106,6 +107,8 @@ impl App {
                 std::process::exit(EXIT_ERROR_CODE);
             }
         };
+        // Can't define const API_URL from environment variables
+        let api_url = env::var("MOCK_API_URL").unwrap_or("https://trends.shodan.io".to_string());
 
         let mut app = Self {
             running: true,
@@ -114,6 +117,7 @@ impl App {
             tick_rate: 250,
             ticks: 0,
 
+            api_url,
             api_key,
             queries: vec![],
             last_query: String::new(),
@@ -486,12 +490,13 @@ impl App {
         } else {
             // Lock application, delay terminal events
             self.blocking = 1;
+            let api_url = self.api_url.to_owned();
             let api_key = self.api_key.to_owned();
 
             // Make API request in the background
             thread::spawn(move || {
                 let resp: Result<ureq::Response, ureq::Error> =
-                    ureq::get(&format!("{}/api/v1/search", API_ENDPOINT))
+                    ureq::get(&format!("{}/api/v1/search", api_url))
                         .query("query", &query)
                         .query("facets", &facets)
                         .query("key", &api_key)

@@ -5,7 +5,7 @@ use std::fs::{self, File};
 use std::io::prelude::*;
 use std::path::Path;
 
-fn get_config_dir() -> String {
+pub fn get_config_dir() -> String {
     let home_dir = dirs::home_dir().unwrap().display().to_string();
     match Path::new(&format!("{}/.shodan", home_dir)).is_dir() {
         true => format!("{}/.shodan", home_dir),
