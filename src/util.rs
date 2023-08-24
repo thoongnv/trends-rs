@@ -1,7 +1,6 @@
 use dirs;
 use serde_json::{json, Value};
-use std::fs::OpenOptions;
-use std::fs::{self, File};
+use std::fs::{create_dir_all, metadata, set_permissions, File};
 use std::io::prelude::*;
 use std::path::Path;
 
@@ -59,29 +58,21 @@ pub fn init_api_key(mut key: String, validate: bool) -> Result<(), std::io::Erro
     if valid {
         // Create the directory if missing
         let config_dir: String = get_config_dir();
-        fs::create_dir_all(config_dir.clone())?;
+        create_dir_all(config_dir.clone())?;
 
         // Save key to file
         let fpath = format!("{}/api_key", config_dir);
-        let mut file;
-
-        #[cfg(not(windows))]
-        {
-            use std::os::unix::prelude::OpenOptionsExt;
-            file = OpenOptions::new()
-                .create(true)
-                .write(true)
-                .mode(0o600)
-                .open(fpath)?;
-        }
-
-        // Skip setting file permission on Windows
-        #[cfg(windows)]
-        {
-            file = OpenOptions::new().create(true).write(true).open(fpath)?;
-        }
-
+        let mut file = File::create(fpath.clone())?;
         file.write_all(key.as_bytes())?;
+
+        // Set permission skip if errored out
+        if let Ok(metadata) = metadata(fpath.clone()) {
+            let mut perms = metadata.permissions();
+            perms.set_readonly(true);
+
+            let _ = set_permissions(fpath, perms);
+        };
+
         println!("Successfully initialized");
     }
 
