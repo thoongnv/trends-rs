@@ -95,4 +95,11 @@ jobs:
 
     - name: Run tests
       if: matrix.build != 'macos-arm'
-      run: ${{ env.CARGO }} test ${{ env.TARGET_FLAGS }} -- --nocapture
+      shell: bash
+      run: |
+        if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+          mkdir -p /.config/shodan
+          echo "invalid" > /.config/shodan/api_key
+        fi
+
+        ${{ env.CARGO }} test ${{ env.TARGET_FLAGS }} -- --nocapture
