@@ -5,11 +5,18 @@ use std::io::prelude::*;
 use std::path::Path;
 
 pub fn get_config_dir() -> String {
-    let home_dir = dirs::home_dir().unwrap().display().to_string();
-    match Path::new(&format!("{}/.shodan", home_dir)).is_dir() {
-        true => format!("{}/.shodan", home_dir),
-        false => format!("{}/.config/shodan", home_dir),
+    let mut home_dir_str = String::new();
+
+    if let Some(home_dir) = dirs::home_dir() {
+        let dir_str = home_dir.display().to_string();
+        if Path::new(&format!("{}/.shodan", dir_str)).is_dir() {
+            home_dir_str = format!("{}/.shodan", dir_str);
+        } else {
+            home_dir_str = format!("{}/.config/shodan", dir_str);
+        }
     }
+
+    home_dir_str
 }
 
 pub fn get_api_key() -> Result<String, std::io::Error> {
@@ -58,22 +65,44 @@ pub fn init_api_key(mut key: String, validate: bool) -> Result<(), std::io::Erro
     if valid {
         // Create the directory if missing
         let config_dir: String = get_config_dir();
-        create_dir_all(config_dir.clone())?;
+        if !config_dir.is_empty() {
+            match create_dir_all(config_dir.clone()) {
+                Ok(_) => {
+                    // Save key to file
+                    let fpath = format!("{}/api_key", config_dir);
 
-        // Save key to file
-        let fpath = format!("{}/api_key", config_dir);
-        let mut file = File::create(fpath.clone())?;
-        file.write_all(key.as_bytes())?;
-
-        // Set permission skip if errored out
-        if let Ok(metadata) = metadata(fpath.clone()) {
-            let mut perms = metadata.permissions();
-            perms.set_readonly(true);
-
-            let _ = set_permissions(fpath, perms);
-        };
-
-        println!("Successfully initialized");
+                    match File::create(fpath.clone()) {
+                        Ok(mut file) => {
+                            match file.write_all(key.as_bytes()) {
+                                Ok(_) => {
+                                    // Set permission skip if errored out
+                                    if let Ok(metadata) = metadata(fpath.clone()) {
+                                        let mut perms = metadata.permissions();
+                                        perms.set_readonly(true);
+                                        let _ = set_permissions(fpath, perms);
+                                    };
+                                    println!("Successfully initialized");
+                                }
+                                Err(err) => {
+                                    println!(
+                                        "Error: Failed to write API key ({})",
+                                        err.to_string()
+                                    );
+                                }
+                            };
+                        }
+                        Err(err) => {
+                            println!("Error: Failed to create API key ({})", err.to_string());
+                        }
+                    };
+                }
+                Err(_) => {
+                    println!("Error: Unable to create key directory ({})", config_dir);
+                }
+            };
+        } else {
+            println!("Error: Unable to get config directory");
+        }
     }
 
     Ok(())
