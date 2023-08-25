@@ -152,7 +152,7 @@ pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame
         .style(Style::default().fg(Color::Red));
     let error_widget = Paragraph::new(format!(
         "{}\n\
-        API documents: https://developer.shodan.io/api
+        API documentation: https://developer.shodan.io/api/trends
     ",
         app.api_error.to_owned()
     ))

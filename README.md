@@ -6,7 +6,7 @@
 
 ## Search and visualize Shodan historical data in the terminal.
 
-`strend` fetches data via the [Shodan Trends](https://trends.shodan.io) API, please check [docs](https://developer.shodan.io/api) for more information.
+`strend` fetches data via the [Shodan Trends](https://trends.shodan.io) API, please check [docs](https://developer.shodan.io/api/trends) for more information.
 
 ![Sample](sample.png)
 
