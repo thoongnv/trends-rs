@@ -8,7 +8,6 @@ use human_repr::HumanCount;
 use ratatui::prelude::*;
 use ratatui::widgets::*;
 use ratatui::{
-    backend::Backend,
     layout::Alignment,
     style::Style,
     widgets::{Block, Borders, Paragraph},
@@ -59,7 +58,7 @@ const SELECTED_FACET_LINES: usize = 5;
 /// Renders the user interface widgets.
 // - https://docs.rs/ratatui/latest/ratatui/widgets/index.html
 // - https://github.com/tui-rs-revival/ratatui/tree/master/examples
-pub fn render<B: Backend>(app: &mut App, state: &mut AppState, frame: &mut Frame<'_, B>) {
+pub fn render(app: &mut App, state: &mut AppState, frame: &mut Frame<'_>) {
     // There are 3 possible layouts when users run command:
     // - Launched without search query
     // - Search query with success results
