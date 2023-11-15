@@ -438,7 +438,9 @@ impl App {
                     if err.to_string().contains("timed out") {
                         self.api_error = "Timed out, please try again later.".to_string();
                     } else {
-                        self.api_error = "Search failed, please try again later.".to_string();
+                        self.api_error =
+                            "API request failed, please recheck the network or proxy config."
+                                .to_string();
                     }
                 }
             };
@@ -495,13 +497,17 @@ impl App {
 
             // Make API request in the background
             thread::spawn(move || {
-                let resp: Result<ureq::Response, ureq::Error> =
-                    ureq::get(&format!("{}/api/v1/search", api_url))
-                        .query("query", &query)
-                        .query("facets", &facets)
-                        .query("key", &api_key)
-                        .timeout(Duration::from_secs(API_TIMEOUT))
-                        .call();
+                let agent = ureq::AgentBuilder::new()
+                    .timeout(Duration::from_secs(API_TIMEOUT))
+                    .try_proxy_from_env(true)
+                    .build();
+                let resp: Result<ureq::Response, ureq::Error> = agent
+                    .get(&format!("{}/api/v1/search", api_url))
+                    .query("query", &query)
+                    .query("facets", &facets)
+                    .query("key", &api_key)
+                    .call();
+
                 // Let self.tick (unblocking function) process API response
                 sender.send(resp).unwrap();
             });
