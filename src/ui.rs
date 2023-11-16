@@ -526,8 +526,7 @@ pub fn render(app: &mut App, state: &mut AppState, frame: &mut Frame<'_>) {
                     )
                     .y_axis(
                         Axis::default()
-                            // https://github.com/ratatui-org/ratatui/issues/379
-                            // .title(Span::styled("num of banners", Style::default()))
+                            .title(Span::styled("Total results", Style::default()))
                             .style(match app.line_chart.focused() {
                                 true => focused_style,
                                 false => Style::default().fg(Color::Gray),
