@@ -1,6 +1,6 @@
 [package]
 name = "strend"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["Thong Nguyen <vanthong.nguyen@shodan.io>"]
 description = "Official TUI to search and visualize Shodan historical data."
 readme = "README.md"
