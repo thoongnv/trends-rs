@@ -12,7 +12,7 @@ pub fn handle_events(event: Event, app: &mut App, state: &mut AppState) -> AppRe
     state.submitted = false;
 
     // On unfocused any panels
-    if state.unfocused {
+    if !state.focused {
         // match event {
         //     Event::Key(key_event) => {
         //         match key_event.code {
@@ -40,7 +40,7 @@ pub fn handle_events(event: Event, app: &mut App, state: &mut AppState) -> AppRe
 
             if let Event::Key(key_event) = event {
                 if key_event.code == KeyCode::Esc {
-                    state.unfocused = true;
+                    state.focused = false;
                     widgets[widget_index].set_focus(false);
                 }
             }

@@ -80,7 +80,7 @@ fn launch_app_and_make_few_searches() -> AppResult<()> {
 
     let mut app = App::new(query, facets, receiver);
     let mut state: AppState = AppState {
-        unfocused: true,
+        focused: true,
         submitted: false,
         first_render: true,
         facet_indexes: HashMap::new(),
@@ -99,7 +99,7 @@ fn launch_app_and_make_few_searches() -> AppResult<()> {
         ui::render(&mut app, &mut state, frame);
     })?;
 
-    let expected = Buffer::with_lines(vec![
+    let mut expected = Buffer::with_lines(vec![
         "┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐",
         "│ Query:                                                                                                                                   │",
         "│ Facets (optional):                                                                                                                       │",
@@ -139,13 +139,46 @@ fn launch_app_and_make_few_searches() -> AppResult<()> {
         "│                                                                                                                                          │",
         "└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘",
         "                                                                                                                                            ",
-        "Switch panels [⇥]  Exit [^C]                                                                                                                ",
+        "Search [⏎]  Move cursor [←→]  Delete Char [⌫]  Up/ Down [↑↓]  Unfocused [⎋]  Switch panels [⇥]  Exit [^C]                                   ",
     ]);
     println!("{:?}", terminal.backend().buffer());
+
+    // Searchbox has focused style
+    for i in 0..=139 {
+        expected
+            .get_mut(i, 0)
+            .set_style(Style::default().fg(Color::Yellow));
+    }
+
+    expected
+        .get_mut(0, 1)
+        .set_style(Style::default().fg(Color::Yellow));
+
+    for i in 2..=7 {
+        expected
+            .get_mut(i, 1)
+            .set_style(Style::default().add_modifier(Modifier::BOLD));
+    }
+
+    for i in 1..=2 {
+        expected
+            .get_mut(139, i)
+            .set_style(Style::default().fg(Color::Yellow));
+    }
+
+    expected
+        .get_mut(0, 2)
+        .set_style(Style::default().fg(Color::Yellow));
+
+    for i in 0..=139 {
+        expected
+            .get_mut(i, 3)
+            .set_style(Style::default().fg(Color::Yellow));
+    }
+
     terminal.backend().assert_buffer(&expected);
 
-    // Focus searchbox
-    app.switch_widgets(&mut state, false)?;
+    // Searchbox on focused
     assert!(app.search_input.focused());
 
     // Enter query
@@ -500,7 +533,7 @@ fn launch_app_and_make_few_searches() -> AppResult<()> {
     let buffer_str = buffer_view(terminal.backend().buffer());
     assert!(buffer_str.contains("Exported chart to ./data.csv"));
     assert!(app.facet_values.focused());
-    assert!(!state.unfocused);
+    assert!(state.focused);
     assert!(app.running);
 
     // Unfocus all widgets
@@ -518,7 +551,7 @@ fn launch_app_and_make_few_searches() -> AppResult<()> {
     let buffer_str = buffer_view(terminal.backend().buffer());
     assert!(!buffer_str.contains("Up/ Down [↑↓]"));
     assert!(!app.facet_values.focused());
-    assert!(state.unfocused);
+    assert!(!state.focused);
     assert!(app.running);
 
     // Close application

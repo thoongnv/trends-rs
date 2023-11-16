@@ -70,7 +70,7 @@ use crossterm::event::{Event, KeyCode};
 //                 KeyCode::Down => self.next(),
 //                 KeyCode::Up => self.previous(),
 //                 KeyCode::Esc => {
-//                     state.unfocused = true;
+//                     state.focused = false;
 //                     self.focused = false;
 //                 }
 //                 _ => {}

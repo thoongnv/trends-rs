@@ -61,7 +61,7 @@ fn main() -> AppResult<()> {
     // Create an application.
     let mut app = App::new(query, facets, receiver);
     let mut state: AppState = AppState {
-        unfocused: true,
+        focused: true,
         submitted: false,
         first_render: true,
         facet_indexes: HashMap::new(),

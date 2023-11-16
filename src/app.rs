@@ -86,7 +86,7 @@ pub struct FacetIndex {
 // src/handler.rs: widgets[widget_index].handle_events(event.clone(), state);
 #[derive(Debug)]
 pub struct AppState {
-    pub unfocused: bool, // If there is no focused panel
+    pub focused: bool, // If there is a focused panel
     pub submitted: bool,
     pub first_render: bool,
     pub facet_indexes: HashMap<String, FacetIndex>, // Saved <query.facet_values, selected_indexes>
@@ -141,8 +141,8 @@ impl App {
         app.facet_values.set_hide(true);
         app.line_chart.set_hide(true);
 
-        // Point to last panel so first Tab will focus on searchbox
-        app.widget_index = app.get_widgets().len() - 1;
+        // Default focus on first searchbox
+        app.select_widget(0);
         app
     }
 
@@ -190,7 +190,7 @@ impl App {
             };
 
             self.select_widget(new_widget);
-            state.unfocused = false;
+            state.focused = true;
 
             // Switch to next until find visible widget
             if !self.get_widgets()[new_widget].hidden() {
