@@ -3,3 +3,16 @@ image = "ghcr.io/thoongnv/aarch64-apple-darwin-cross:latest"
 
 [target.aarch64-pc-windows-msvc]
 image = "ghcr.io/thoongnv/aarch64-pc-windows-msvc-cross:latest"
+
+# Workaround for cross not passsing environment variables in CI ubuntu-latest image
+[target.x86_64-unknown-linux-gnu.env]
+passthrough = [
+    "HOME",
+    "GITHUB_RUN_ID",
+]
+
+[target.aarch64-unknown-linux-gnu.env]
+passthrough = [
+    "HOME",
+    "GITHUB_RUN_ID",
+]
