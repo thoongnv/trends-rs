@@ -8,11 +8,7 @@ pub fn get_config_dir() -> String {
     let mut home_dir_str = String::new();
 
     if let Some(home_dir) = dirs::home_dir() {
-        let mut dir_str = home_dir.display().to_string();
-        // Fix HOME=/ in Github CI
-        if dir_str == "/" {
-            dir_str = "".to_string();
-        }
+        let dir_str = home_dir.display().to_string();
 
         if Path::new(&format!("{}/.shodan", dir_str)).is_dir() {
             home_dir_str = format!("{}/.shodan", dir_str);

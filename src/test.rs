@@ -26,10 +26,10 @@ fn launch_app_and_make_few_searches() -> AppResult<()> {
     let mut server = mockito::Server::new();
 
     // Only mock tests if running in Github CI
-    if let Ok(_) = env::var("CARGO_PKG_NAME") {
+    if env::var("GITHUB_RUN_ID").is_ok() {
         // Create temp key file as we will mock API requests later
         if let Err(_) = util::get_api_key() {
-            util::init_api_key("invalid".to_string(), false)?;
+            util::init_api_key("key".to_string(), false)?;
         }
 
         // Mock API url
