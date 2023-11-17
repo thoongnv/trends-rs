@@ -32,11 +32,11 @@ jobs:
         build: [linux, linux-arm, macos, macos-arm, windows]
         include:
         - build: linux
-          os: ubuntu-20.04
+          os: ubuntu-latest
           rust: stable
           target: x86_64-unknown-linux-gnu
         - build: linux-arm
-          os: ubuntu-20.04
+          os: ubuntu-latest
           rust: stable
           target: aarch64-unknown-linux-gnu
         - build: macos
@@ -95,4 +95,13 @@ jobs:
 
     - name: Run tests
       if: matrix.build != 'macos-arm'
-      run: ${{ env.CARGO }} test ${{ env.TARGET_FLAGS }} -- --nocapture
+      run: |
+        if [[ "${{ matrix.build }}" = "linux" ]]; then
+          cargo test ${{ env.TARGET_FLAGS }} -- --nocapture
+        elif [[ "${{ matrix.build }}" = "linux-arm" ]]; then
+          apt install gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu -y
+          rustup target add aarch64-unknown-linux-gnu
+          RUSTFLAGS="-C linker=aarch64-linux-gnu-gcc" cargo test ${{ env.TARGET_FLAGS }} -- --nocapture
+        else
+          ${{ env.CARGO }} test ${{ env.TARGET_FLAGS }} -- --nocapture
+        fi
