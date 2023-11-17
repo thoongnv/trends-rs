@@ -27,11 +27,13 @@ repos:
         name: cargo check
         entry: bash -c 'cargo check; git add -u' --
         language: rust
+        files: \.rs$
 
       - id: cargo-clippy
         name: cargo clippy
         entry: bash -c 'cargo clippy; git add -u' --
         language: rust
+        files: \.rs$
 
       - id: cargo-test
         name: cargo test
