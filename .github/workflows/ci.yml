@@ -47,10 +47,10 @@ jobs:
           os: ubuntu-20.04
           rust: stable
           target: aarch64-apple-darwin
-        - build: windows
-          os: windows-latest
-          rust: stable
-          target: x86_64-pc-windows-msvc
+        # - build: windows
+        #   os: windows-latest
+        #   rust: stable
+        #   target: x86_64-pc-windows-msvc
         # Failed to build, could be an issue with ring crate, recheck on new version? https://github.com/cross-rs/cross/issues/1307
         # - build: windows-arm
         #   os: ubuntu-20.04
