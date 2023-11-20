@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build: [linux, linux-arm, macos, macos-arm, windows]
+        build: [linux, linux-arm, macos, macos-arm]
         include:
         - build: linux
           os: ubuntu-latest
