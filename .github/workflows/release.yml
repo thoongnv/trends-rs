@@ -138,6 +138,7 @@ jobs:
           tap: thoongnv/homebrew-strend
           token: ${{ secrets.HOMEBREW_BUMP_TOKEN }}
           formula: strend
+          force: true
 
   deb-publish:
     name: Publish deb package
