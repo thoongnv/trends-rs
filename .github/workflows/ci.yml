@@ -95,7 +95,8 @@ jobs:
           sudo sh -c "sed 's/http:\/\/\(.*\).ubuntu.com\/ubuntu\//[arch-=amd64,i386] http:\/\/ports.ubuntu.com\/ubuntu-ports\//g' /etc/apt/sources.list > /etc/apt/sources.list.d/ports.list"
           sudo sed -i 's/http:\/\/\(.*\).ubuntu.com\/ubuntu\//[arch=amd64,i386] http:\/\/\1.archive.ubuntu.com\/ubuntu\//g' /etc/apt/sources.list
           ls -lh /etc/apt/sources.list.d
-          cat /etc/apt/sources.list.d/ports.list
+          cat -n /etc/apt/sources.list
+          cat -n /etc/apt/sources.list.d/ports.list
           sudo mv /etc/apt/sources.list.d/ubuntu-toolchain-r-ubuntu-test-jammy.list /etc/apt/sources.list.d/ubuntu-toolchain-r-ubuntu-test-jammy.list.bak
           sudo mv /etc/apt/sources.list.d/microsoft-prod.list /etc/apt/sources.list.d/microsoft-prod.list.bak
           sudo apt-get update || true
