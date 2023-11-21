@@ -155,7 +155,7 @@ jobs:
         shell: bash
         run: |
           cargo deb
-          mv target/debian/strend_${{ github.ref_name }}_amd64.deb target/debian/strend-${{ github.ref_name }}-x86_64.deb
+          mv target/debian/strend_${{ github.ref_name }}*_amd64.deb target/debian/strend-${{ github.ref_name }}-x86_64.deb
       - name: Releasing assets
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
