@@ -87,46 +87,46 @@ jobs:
     #     echo "target flag is: ${{ env.TARGET_FLAGS }}"
     #     echo "target dir is: ${{ env.TARGET_DIR }}"
 
-    - name: Install Linux ARM toolchain
-      if: matrix.build == 'linux-arm'
-      shell: bash
-      run: |
-          sudo dpkg --add-architecture arm64
-          sudo tee /etc/apt/sources.list << END
-          deb [arch=amd64,i386] http://archive.archive.ubuntu.com/ubuntu/ jammy main restricted
-          deb [arch=amd64,i386] http://archive.archive.ubuntu.com/ubuntu/ jammy-updates main restricted
-          deb [arch=amd64,i386] http://archive.archive.ubuntu.com/ubuntu/ jammy universe
-          deb [arch=amd64,i386] http://archive.archive.ubuntu.com/ubuntu/ jammy-updates universe
-          deb [arch=amd64,i386] http://archive.archive.ubuntu.com/ubuntu/ jammy multiverse
-          deb [arch=amd64,i386] http://archive.archive.ubuntu.com/ubuntu/ jammy-updates multiverse
-          deb [arch=amd64,i386] http://archive.archive.ubuntu.com/ubuntu/ jammy-backports main restricted universe multiverse
-          deb [arch=amd64,i386] http://security.archive.ubuntu.com/ubuntu/ jammy-security main restricted
-          deb [arch=amd64,i386] http://security.archive.ubuntu.com/ubuntu/ jammy-security universe
-          deb [arch=amd64,i386] http://security.archive.ubuntu.com/ubuntu/ jammy-security multiverse
-          END
-          sudo tee /etc/apt/sources.list.d/ports.list << END
-          deb [arch-=amd64,i386] http://ports.ubuntu.com/ubuntu-ports/ jammy main restricted
-          deb [arch-=amd64,i386] http://ports.ubuntu.com/ubuntu-ports/ jammy-updates main restricted
-          deb [arch-=amd64,i386] http://ports.ubuntu.com/ubuntu-ports/ jammy universe
-          deb [arch-=amd64,i386] http://ports.ubuntu.com/ubuntu-ports/ jammy-updates universe
-          deb [arch-=amd64,i386] http://ports.ubuntu.com/ubuntu-ports/ jammy multiverse
-          deb [arch-=amd64,i386] http://ports.ubuntu.com/ubuntu-ports/ jammy-updates multiverse
-          deb [arch-=amd64,i386] http://ports.ubuntu.com/ubuntu-ports/ jammy-backports main restricted universe multiverse
-          deb [arch-=amd64,i386] http://ports.ubuntu.com/ubuntu-ports/ jammy-security main restricted
-          deb [arch-=amd64,i386] http://ports.ubuntu.com/ubuntu-ports/ jammy-security universe
-          deb [arch-=amd64,i386] http://ports.ubuntu.com/ubuntu-ports/ jammy-security multiverse
-          END
-          ls -lh /etc/apt/sources.list.d
-          cat -n /etc/apt/sources.list
-          cat -n /etc/apt/sources.list.d/ports.list
-          sudo mv /etc/apt/sources.list.d/git-core-ubuntu-ppa-jammy.list /etc/apt/sources.list.d/git-core-ubuntu-ppa-jammy.list.bak || true
-          sudo mv /etc/apt/sources.list.d/ubuntu-toolchain-r-ubuntu-test-jammy.list /etc/apt/sources.list.d/ubuntu-toolchain-r-ubuntu-test-jammy.list.bak || true
-          sudo mv /etc/apt/sources.list.d/github_git-lfs.list /etc/apt/sources.list.d/github_git-lfs.list.bak || true
-          sudo mv /etc/apt/sources.list.d/microsoft-prod.list /etc/apt/sources.list.d/microsoft-prod.list.bak || true
-          sudo apt-get update || true
-          sudo apt-get update --fix-missing
-          sudo apt install libgcc-s1:arm64 gcc g++ libc6-dev libclang-dev pkg-config libstd-rust-dev:arm64 gcc-aarch64-linux-gnu qemu-user -y
-          rustup target add aarch64-unknown-linux-gnu
+    # - name: Install Linux ARM toolchain
+    #   if: matrix.build == 'linux-arm'
+    #   shell: bash
+    #   run: |
+    #       sudo dpkg --add-architecture arm64
+    #       sudo tee /etc/apt/sources.list << END
+    #       deb [arch=amd64,i386] http://archive.archive.ubuntu.com/ubuntu/ jammy main restricted
+    #       deb [arch=amd64,i386] http://archive.archive.ubuntu.com/ubuntu/ jammy-updates main restricted
+    #       deb [arch=amd64,i386] http://archive.archive.ubuntu.com/ubuntu/ jammy universe
+    #       deb [arch=amd64,i386] http://archive.archive.ubuntu.com/ubuntu/ jammy-updates universe
+    #       deb [arch=amd64,i386] http://archive.archive.ubuntu.com/ubuntu/ jammy multiverse
+    #       deb [arch=amd64,i386] http://archive.archive.ubuntu.com/ubuntu/ jammy-updates multiverse
+    #       deb [arch=amd64,i386] http://archive.archive.ubuntu.com/ubuntu/ jammy-backports main restricted universe multiverse
+    #       deb [arch=amd64,i386] http://security.archive.ubuntu.com/ubuntu/ jammy-security main restricted
+    #       deb [arch=amd64,i386] http://security.archive.ubuntu.com/ubuntu/ jammy-security universe
+    #       deb [arch=amd64,i386] http://security.archive.ubuntu.com/ubuntu/ jammy-security multiverse
+    #       END
+
+    #       sudo tee /etc/apt/sources.list.d/ports.list << END
+    #       deb [arch-=amd64,i386] http://ports.ubuntu.com/ubuntu-ports/ jammy main restricted
+    #       deb [arch-=amd64,i386] http://ports.ubuntu.com/ubuntu-ports/ jammy-updates main restricted
+    #       deb [arch-=amd64,i386] http://ports.ubuntu.com/ubuntu-ports/ jammy universe
+    #       deb [arch-=amd64,i386] http://ports.ubuntu.com/ubuntu-ports/ jammy-updates universe
+    #       deb [arch-=amd64,i386] http://ports.ubuntu.com/ubuntu-ports/ jammy multiverse
+    #       deb [arch-=amd64,i386] http://ports.ubuntu.com/ubuntu-ports/ jammy-updates multiverse
+    #       deb [arch-=amd64,i386] http://ports.ubuntu.com/ubuntu-ports/ jammy-backports main restricted universe multiverse
+    #       deb [arch-=amd64,i386] http://ports.ubuntu.com/ubuntu-ports/ jammy-security main restricted
+    #       deb [arch-=amd64,i386] http://ports.ubuntu.com/ubuntu-ports/ jammy-security universe
+    #       deb [arch-=amd64,i386] http://ports.ubuntu.com/ubuntu-ports/ jammy-security multiverse
+    #       END
+
+    #       ls -lh /etc/apt/sources.list.d
+    #       sudo mv /etc/apt/sources.list.d/git-core-ubuntu-ppa-jammy.list /etc/apt/sources.list.d/git-core-ubuntu-ppa-jammy.list.bak || true
+    #       sudo mv /etc/apt/sources.list.d/ubuntu-toolchain-r-ubuntu-test-jammy.list /etc/apt/sources.list.d/ubuntu-toolchain-r-ubuntu-test-jammy.list.bak || true
+    #       sudo mv /etc/apt/sources.list.d/github_git-lfs.list /etc/apt/sources.list.d/github_git-lfs.list.bak || true
+    #       sudo mv /etc/apt/sources.list.d/microsoft-prod.list /etc/apt/sources.list.d/microsoft-prod.list.bak || true
+    #       sudo apt-get update || true
+    #       sudo apt-get update --fix-missing
+    #       sudo apt install libgcc-s1:arm64 gcc g++ libc6-dev libclang-dev pkg-config libstd-rust-dev:arm64 gcc-aarch64-linux-gnu qemu-user -y
+    #       rustup target add aarch64-unknown-linux-gnu
 
     # - name: Build
     #   run: ${{ env.CARGO }} build --verbose ${{ env.TARGET_FLAGS }}
