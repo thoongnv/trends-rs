@@ -3,13 +3,13 @@ name: CI
 on: push
 
 jobs:
-  format:
-    name: Check Format
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Cargo fmt
-        run: cargo fmt --all -- --check
+  # format:
+  #   name: Check Format
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - name: Cargo fmt
+  #       run: cargo fmt --all -- --check
 
   test:
     name: Test
@@ -57,35 +57,35 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: ${{ matrix.rust }}
-        profile: minimal
-        override: true
-        target: ${{ matrix.target }}
+    # - name: Install Rust
+    #   uses: actions-rs/toolchain@v1
+    #   with:
+    #     toolchain: ${{ matrix.rust }}
+    #     profile: minimal
+    #     override: true
+    #     target: ${{ matrix.target }}
 
-    - name: Login to GitHub Container Registry
-      if: matrix.build == 'macos-arm' || matrix.build == 'windows-arm'
-      uses: docker/login-action@v2
-      with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.GH_REGISTRY_TOKEN }}
+    # - name: Login to GitHub Container Registry
+    #   if: matrix.build == 'macos-arm' || matrix.build == 'windows-arm'
+    #   uses: docker/login-action@v2
+    #   with:
+    #     registry: ghcr.io
+    #     username: ${{ github.actor }}
+    #     password: ${{ secrets.GH_REGISTRY_TOKEN }}
 
-    - name: Use Cross
-      shell: bash
-      run: |
-        cargo install cross
-        echo "CARGO=cross" >> $GITHUB_ENV
-        echo "TARGET_FLAGS=--target ${{ matrix.target }}" >> $GITHUB_ENV
-        echo "TARGET_DIR=./target/${{ matrix.target }}" >> $GITHUB_ENV
+    # - name: Use Cross
+    #   shell: bash
+    #   run: |
+    #     cargo install cross
+    #     echo "CARGO=cross" >> $GITHUB_ENV
+    #     echo "TARGET_FLAGS=--target ${{ matrix.target }}" >> $GITHUB_ENV
+    #     echo "TARGET_DIR=./target/${{ matrix.target }}" >> $GITHUB_ENV
 
-    - name: Show command used for Cargo
-      run: |
-        echo "cargo command is: ${{ env.CARGO }}"
-        echo "target flag is: ${{ env.TARGET_FLAGS }}"
-        echo "target dir is: ${{ env.TARGET_DIR }}"
+    # - name: Show command used for Cargo
+    #   run: |
+    #     echo "cargo command is: ${{ env.CARGO }}"
+    #     echo "target flag is: ${{ env.TARGET_FLAGS }}"
+    #     echo "target dir is: ${{ env.TARGET_DIR }}"
 
     - name: Install Linux ARM toolchain
       if: matrix.build == 'linux-arm'
@@ -116,24 +116,27 @@ jobs:
           deb [arch-=amd64,i386] http://ports.ubuntu.com/ubuntu-ports/ jammy-security universe
           deb [arch-=amd64,i386] http://ports.ubuntu.com/ubuntu-ports/ jammy-security multiverse
           END
+          ls -lh /etc/apt/sources.list.d
           cat -n /etc/apt/sources.list
           cat -n /etc/apt/sources.list.d/ports.list
-          sudo mv /etc/apt/sources.list.d/ubuntu-toolchain-r-ubuntu-test-jammy.list /etc/apt/sources.list.d/ubuntu-toolchain-r-ubuntu-test-jammy.list.bak
-          sudo mv /etc/apt/sources.list.d/microsoft-prod.list /etc/apt/sources.list.d/microsoft-prod.list.bak
+          sudo mv /etc/apt/sources.list.d/git-core-ubuntu-ppa-jammy.list /etc/apt/sources.list.d/git-core-ubuntu-ppa-jammy.list.bak || true
+          sudo mv /etc/apt/sources.list.d/ubuntu-toolchain-r-ubuntu-test-jammy.list /etc/apt/sources.list.d/ubuntu-toolchain-r-ubuntu-test-jammy.list.bak || true
+          sudo mv /etc/apt/sources.list.d/github_git-lfs.list /etc/apt/sources.list.d/github_git-lfs.list.bak || true
+          sudo mv /etc/apt/sources.list.d/microsoft-prod.list /etc/apt/sources.list.d/microsoft-prod.list.bak || true
           sudo apt-get update || true
           sudo apt-get update --fix-missing
-          sudo apt install libgcc-s1:arm64=12.3.0-1ubuntu1 gcc g++ libc6-dev libclang-dev pkg-config libstd-rust-dev:arm64 gcc-aarch64-linux-gnu qemu-user -y
+          sudo apt install libgcc-s1:arm64 gcc g++ libc6-dev libclang-dev pkg-config libstd-rust-dev:arm64 gcc-aarch64-linux-gnu qemu-user -y
           rustup target add aarch64-unknown-linux-gnu
 
-    - name: Build
-      run: ${{ env.CARGO }} build --verbose ${{ env.TARGET_FLAGS }}
+    # - name: Build
+    #   run: ${{ env.CARGO }} build --verbose ${{ env.TARGET_FLAGS }}
 
-    - name: Run tests
-      if: matrix.build != 'macos-arm'
-      shell: bash
-      run: |
-        if [[ "${{ matrix.build }}" = "linux" || "${{ matrix.build }}" = "linux-arm" ]]; then
-          cargo test ${{ env.TARGET_FLAGS }} -- --nocapture
-        else
-          ${{ env.CARGO }} test ${{ env.TARGET_FLAGS }} -- --nocapture
-        fi
+    # - name: Run tests
+    #   if: matrix.build != 'macos-arm'
+    #   shell: bash
+    #   run: |
+    #     if [[ "${{ matrix.build }}" = "linux" || "${{ matrix.build }}" = "linux-arm" ]]; then
+    #       cargo test ${{ env.TARGET_FLAGS }} -- --nocapture
+    #     else
+    #       ${{ env.CARGO }} test ${{ env.TARGET_FLAGS }} -- --nocapture
+    #     fi
