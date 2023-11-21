@@ -122,7 +122,7 @@ jobs:
           sudo mv /etc/apt/sources.list.d/microsoft-prod.list /etc/apt/sources.list.d/microsoft-prod.list.bak
           sudo apt-get update || true
           sudo apt-get update --fix-missing
-          sudo apt install g++ libc6-dev libclang-dev pkg-config libstd-rust-dev:arm64 gcc-aarch64-linux-gnu qemu-user -y
+          sudo apt install gcc g++ libc6-dev libclang-dev pkg-config libstd-rust-dev:arm64 gcc-aarch64-linux-gnu qemu-user -y
           rustup target add aarch64-unknown-linux-gnu
 
     - name: Build
