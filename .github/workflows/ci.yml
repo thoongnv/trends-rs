@@ -93,13 +93,16 @@ jobs:
     - name: Build
       run: ${{ env.CARGO }} build --verbose ${{ env.TARGET_FLAGS }}
 
-    - name: Build Linux ARM
+    - name: Build Linux ARM toolchain
       if: matrix.build == 'linux-arm'
       shell: bash
       run: |
           sudo dpkg --add-architecture arm64
           sudo sh -c "sed 's/http:\/\/\(.*\).ubuntu.com\/ubuntu\//[arch-=amd64,i386] http:\/\/ports.ubuntu.com\/ubuntu-ports\//g' /etc/apt/sources.list > /etc/apt/sources.list.d/ports.list"
           sudo sed -i 's/http:\/\/\(.*\).ubuntu.com\/ubuntu\//[arch=amd64,i386] http:\/\/\1.archive.ubuntu.com\/ubuntu\//g' /etc/apt/sources.list
+          sudo mv /etc/apt/sources.list.d/git-core-ubuntu-ppa-jammy.list /etc/apt/sources.list.d/git-core-ubuntu-ppa-jammy.list.bak
+          sudo mv /etc/apt/sources.list.d/github_git-lfs.list /etc/apt/sources.list.d/github_git-lfs.list.bak
+          sudo mv /etc/apt/sources.list.d/microsoft-prod.list /etc/apt/sources.list.d/microsoft-prod.list.bak
           sudo apt-get update || true
           sudo apt-get update --fix-missing
           sudo apt install g++ libc6-dev libclang-dev pkg-config libstd-rust-dev:arm64 gcc-aarch64-linux-gnu qemu-user -y
