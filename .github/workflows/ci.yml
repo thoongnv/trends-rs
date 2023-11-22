@@ -41,7 +41,7 @@ jobs:
           rust: stable
           target: x86_64-apple-darwin
         - build: macos-arm
-          os: macos-latest-xlarge
+          os: ubuntu-20.04
           rust: stable
           target: aarch64-apple-darwin
         # - build: windows
@@ -132,10 +132,10 @@ jobs:
       run: ${{ env.CARGO }} build --verbose ${{ env.TARGET_FLAGS }}
 
     - name: Run tests
-      if: matrix.build != 'linux-arm'
+      if: matrix.build != 'macos-arm' && matrix.build != 'linux-arm'
       shell: bash
       run: |
-        if [[ "${{ matrix.build }}" = "linux" ]]; then
+        if [[ "${{ matrix.build }}" = "linux" || "${{ matrix.build }}" = "linux-arm" ]]; then
           cargo test ${{ env.TARGET_FLAGS }} -- --nocapture
         else
           ${{ env.CARGO }} test ${{ env.TARGET_FLAGS }} -- --nocapture
